@@ -1,2 +1,2 @@
-DROP TABLE Persona
+CREATE DATABASE Prueba
 GO
