@@ -1,23 +1,23 @@
-CREATE NONCLUSTERED INDEX IX_Factura_Cliente
-ON dbo.Factura (cliente_id);
+CREATE NONCLUSTERED INDEX ix_factura_cliente
+ON dbo.factura (cliente_id);
 GO
 
-CREATE NONCLUSTERED INDEX IX_Factura_Empresa
-ON dbo.Factura (empresa_id);
+CREATE NONCLUSTERED INDEX ix_factura_empresa
+ON dbo.factura (empresa_id);
 GO
 
-CREATE NONCLUSTERED INDEX IX_Factura_FechaEmision
-ON dbo.Factura (fecha_emision);
+CREATE NONCLUSTERED INDEX ix_factura_fechaemision
+ON dbo.factura (fecha_emision);
 GO
 
-CREATE NONCLUSTERED INDEX IX_Factura_Estado
-ON dbo.Factura (estado_factura_id);
+CREATE NONCLUSTERED INDEX ix_factura_estado
+ON dbo.factura (estado_factura_id);
 GO
 
-CREATE NONCLUSTERED INDEX IX_Factura_Moneda
-ON dbo.Factura (moneda_id);
+CREATE NONCLUSTERED INDEX ix_factura_moneda
+ON dbo.factura (moneda_id);
 GO
 
-CREATE NONCLUSTERED INDEX IX_FacturaDetalle_ProductoServicio
-ON dbo.FacturaDetalle (producto_servicio_id);
+CREATE NONCLUSTERED INDEX ix_facturadetalle_productoservicio
+ON dbo.facturadetalle (producto_servicio_id);
 GO
