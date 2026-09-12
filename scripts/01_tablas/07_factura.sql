@@ -17,49 +17,49 @@ CREATE TABLE dbo.factura (
     observaciones VARCHAR(500) NULL,
 
     fecha_creacion DATETIME2 NOT NULL
-        CONSTRAINT df_factura_fechacreacion
-        DEFAULT SYSDATETIME(),
+    CONSTRAINT df_factura_fechacreacion
+    DEFAULT SYSDATETIME(),
 
     fecha_modificacion DATETIME2 NOT NULL
-        CONSTRAINT df_factura_fechamodificacion
-        DEFAULT SYSDATETIME(),
+    CONSTRAINT df_factura_fechamodificacion
+    DEFAULT SYSDATETIME(),
 
     CONSTRAINT pk_factura
-        PRIMARY KEY (factura_id),
+    PRIMARY KEY (factura_id),
 
     CONSTRAINT uq_factura_comprobante
-        UNIQUE (comprobante),
+    UNIQUE (comprobante),
 
     CONSTRAINT fk_factura_empresaemisora
-        FOREIGN KEY (empresa_id)
-        REFERENCES dbo.empresaemisora (empresa_id),
+    FOREIGN KEY (empresa_id)
+    REFERENCES dbo.empresaemisora (empresa_id),
 
     CONSTRAINT fk_factura_cliente
-        FOREIGN KEY (cliente_id)
-        REFERENCES dbo.cliente (cliente_id),
+    FOREIGN KEY (cliente_id)
+    REFERENCES dbo.cliente (cliente_id),
 
     CONSTRAINT fk_factura_tipodocumento
-        FOREIGN KEY (tipo_documento_id)
-        REFERENCES dbo.tipodocumento (tipo_documento_id),
+    FOREIGN KEY (tipo_documento_id)
+    REFERENCES dbo.tipodocumento (tipo_documento_id),
 
     CONSTRAINT fk_factura_moneda
-        FOREIGN KEY (moneda_id)
-        REFERENCES dbo.moneda (moneda_id),
+    FOREIGN KEY (moneda_id)
+    REFERENCES dbo.moneda (moneda_id),
 
     CONSTRAINT fk_factura_estadofactura
-        FOREIGN KEY (estado_factura_id)
-        REFERENCES dbo.estadofactura (estado_factura_id),
+    FOREIGN KEY (estado_factura_id)
+    REFERENCES dbo.estadofactura (estado_factura_id),
 
     CONSTRAINT ck_factura_subtotal
-        CHECK (subtotal >= 0),
+    CHECK (subtotal >= 0),
 
     CONSTRAINT ck_factura_descuentos
-        CHECK (total_descuentos >= 0),
+    CHECK (total_descuentos >= 0),
 
     CONSTRAINT ck_factura_impuestos
-        CHECK (total_impuestos >= 0),
+    CHECK (total_impuestos >= 0),
 
     CONSTRAINT ck_factura_total
-        CHECK (total_final >= 0)
+    CHECK (total_final >= 0)
 );
 GO
