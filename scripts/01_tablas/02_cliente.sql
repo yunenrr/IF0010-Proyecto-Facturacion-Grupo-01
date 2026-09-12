@@ -6,16 +6,16 @@ CREATE TABLE dbo.cliente (
     telefono VARCHAR(20) NOT NULL,
     correo_electronico VARCHAR(150) NOT NULL,
     fecha_registro DATETIME2 NOT NULL
-        CONSTRAINT df_cliente_fecharegistro
-        DEFAULT SYSDATETIME(),
+    CONSTRAINT df_cliente_fecharegistro
+    DEFAULT SYSDATETIME(),
     fecha_ultima_actualizacion DATETIME2 NOT NULL
-        CONSTRAINT df_cliente_fechaultimaactualizacion
-        DEFAULT SYSDATETIME(),
+    CONSTRAINT df_cliente_fechaultimaactualizacion
+    DEFAULT SYSDATETIME(),
 
     CONSTRAINT pk_cliente
-        PRIMARY KEY (cliente_id),
+    PRIMARY KEY (cliente_id),
 
     CONSTRAINT uq_cliente_cedula
-        UNIQUE (cedula)
+    UNIQUE (cedula)
 );
 GO
