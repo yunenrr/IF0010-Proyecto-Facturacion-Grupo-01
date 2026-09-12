@@ -1,5 +1,5 @@
-CREATE TABLE dbo.Factura (
-    factura_id BIGINT IDENTITY(1,1) NOT NULL,
+CREATE TABLE dbo.factura (
+    factura_id BIGINT IDENTITY (1, 1) NOT NULL,
     empresa_id INT NOT NULL,
     cliente_id BIGINT NOT NULL,
     tipo_documento_id INT NOT NULL,
@@ -9,57 +9,57 @@ CREATE TABLE dbo.Factura (
     comprobante VARCHAR(40) NOT NULL,
     fecha_emision DATETIME2 NOT NULL,
 
-    subtotal DECIMAL(18,2) NOT NULL,
-    total_descuentos DECIMAL(18,2) NOT NULL,
-    total_impuestos DECIMAL(18,2) NOT NULL,
-    total_final DECIMAL(18,2) NOT NULL,
+    subtotal DECIMAL(18, 2) NOT NULL,
+    total_descuentos DECIMAL(18, 2) NOT NULL,
+    total_impuestos DECIMAL(18, 2) NOT NULL,
+    total_final DECIMAL(18, 2) NOT NULL,
 
     observaciones VARCHAR(500) NULL,
 
     fecha_creacion DATETIME2 NOT NULL
-        CONSTRAINT DF_Factura_FechaCreacion
+        CONSTRAINT df_factura_fechacreacion
         DEFAULT SYSDATETIME(),
 
     fecha_modificacion DATETIME2 NOT NULL
-        CONSTRAINT DF_Factura_FechaModificacion
+        CONSTRAINT df_factura_fechamodificacion
         DEFAULT SYSDATETIME(),
 
-    CONSTRAINT PK_Factura
+    CONSTRAINT pk_factura
         PRIMARY KEY (factura_id),
 
-    CONSTRAINT UQ_Factura_Comprobante
+    CONSTRAINT uq_factura_comprobante
         UNIQUE (comprobante),
 
-    CONSTRAINT FK_Factura_EmpresaEmisora
+    CONSTRAINT fk_factura_empresaemisora
         FOREIGN KEY (empresa_id)
-        REFERENCES dbo.EmpresaEmisora(empresa_id),
+        REFERENCES dbo.empresaemisora (empresa_id),
 
-    CONSTRAINT FK_Factura_Cliente
+    CONSTRAINT fk_factura_cliente
         FOREIGN KEY (cliente_id)
-        REFERENCES dbo.Cliente(cliente_id),
+        REFERENCES dbo.cliente (cliente_id),
 
-    CONSTRAINT FK_Factura_TipoDocumento
+    CONSTRAINT fk_factura_tipodocumento
         FOREIGN KEY (tipo_documento_id)
-        REFERENCES dbo.TipoDocumento(tipo_documento_id),
+        REFERENCES dbo.tipodocumento (tipo_documento_id),
 
-    CONSTRAINT FK_Factura_Moneda
+    CONSTRAINT fk_factura_moneda
         FOREIGN KEY (moneda_id)
-        REFERENCES dbo.Moneda(moneda_id),
+        REFERENCES dbo.moneda (moneda_id),
 
-    CONSTRAINT FK_Factura_EstadoFactura
+    CONSTRAINT fk_factura_estadofactura
         FOREIGN KEY (estado_factura_id)
-        REFERENCES dbo.EstadoFactura(estado_factura_id),
+        REFERENCES dbo.estadofactura (estado_factura_id),
 
-    CONSTRAINT CK_Factura_Subtotal
+    CONSTRAINT ck_factura_subtotal
         CHECK (subtotal >= 0),
 
-    CONSTRAINT CK_Factura_Descuentos
+    CONSTRAINT ck_factura_descuentos
         CHECK (total_descuentos >= 0),
 
-    CONSTRAINT CK_Factura_Impuestos
+    CONSTRAINT ck_factura_impuestos
         CHECK (total_impuestos >= 0),
 
-    CONSTRAINT CK_Factura_Total
+    CONSTRAINT ck_factura_total
         CHECK (total_final >= 0)
 );
 GO
