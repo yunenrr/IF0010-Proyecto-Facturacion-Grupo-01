@@ -4,9 +4,9 @@ CREATE TABLE dbo.estadofactura (
     descripcion VARCHAR(100) NOT NULL,
 
     CONSTRAINT pk_estadofactura
-        PRIMARY KEY (estado_factura_id),
+    PRIMARY KEY (estado_factura_id),
 
     CONSTRAINT uq_estadofactura_codigo
-        UNIQUE (codigo)
+    UNIQUE (codigo)
 );
 GO
