@@ -5,9 +5,9 @@ CREATE TABLE dbo.moneda (
     descripcion VARCHAR(100) NOT NULL,
 
     CONSTRAINT pk_moneda
-        PRIMARY KEY (moneda_id),
+    PRIMARY KEY (moneda_id),
 
     CONSTRAINT uq_moneda_codigo
-        UNIQUE (codigo)
+    UNIQUE (codigo)
 );
 GO
