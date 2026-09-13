@@ -1,3 +1,6 @@
+SET QUOTED_IDENTIFIER ON;
+GO
+
 CREATE TABLE dbo.facturadetalle (
     factura_detalle_id BIGINT IDENTITY (1, 1) NOT NULL,
     factura_id BIGINT NOT NULL,
