@@ -20,15 +20,9 @@ CREATE TABLE dbo.facturadetalle (
     CONSTRAINT df_facturadetalle_impuesto
     DEFAULT 0,
 
-    subtotal_linea AS
-    CAST(cantidad * precio_unitario AS DECIMAL(18, 2)) PERSISTED,
+    subtotal_linea DECIMAL(18, 2) NOT NULL,
 
-    total_linea AS
-    CAST(
-        (cantidad * precio_unitario)
-        - monto_descuento
-        + monto_impuesto AS DECIMAL(18, 2)
-    ) PERSISTED,
+    total_linea DECIMAL(18, 2) NOT NULL,
 
     CONSTRAINT pk_facturadetalle
     PRIMARY KEY (factura_detalle_id),
@@ -60,6 +54,12 @@ CREATE TABLE dbo.facturadetalle (
     CHECK (monto_descuento >= 0),
 
     CONSTRAINT ck_facturadetalle_impuestomonto
-    CHECK (monto_impuesto >= 0)
+    CHECK (monto_impuesto >= 0), 
+
+    CONSTRAINT ck_facturadetalle_subtotal
+    CHECK (subtotal_linea >= 0),
+
+    CONSTRAINT ck_facturadetalle_total
+    CHECK (total_linea >= 0)
 );
 GO
