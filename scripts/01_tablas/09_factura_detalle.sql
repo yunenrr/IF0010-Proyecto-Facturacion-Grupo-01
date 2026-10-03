@@ -1,65 +1,37 @@
-SET QUOTED_IDENTIFIER ON;
-GO
-
-CREATE TABLE dbo.facturadetalle (
+CREATE TABLE dbo.factura_detalle (
     factura_detalle_id BIGINT IDENTITY (1, 1) NOT NULL,
     factura_id BIGINT NOT NULL,
-    producto_servicio_id INT NOT NULL,
-
-    numero_linea INT NOT NULL,
-    descripcion VARCHAR(200) NOT NULL,
+    producto_id INT NULL,
+    servicio_id INT NULL,
     cantidad DECIMAL(18, 2) NOT NULL,
     precio_unitario DECIMAL(18, 2) NOT NULL,
     porcentaje_impuesto DECIMAL(5, 2) NOT NULL,
+    monto_subtotal DECIMAL(18, 2) NOT NULL,
+    monto_impuesto DECIMAL(18, 2) NOT NULL,
+    monto_total DECIMAL(18, 2) NOT NULL,
 
-    monto_descuento DECIMAL(18, 2) NOT NULL
-    CONSTRAINT df_facturadetalle_descuento
-    DEFAULT 0,
-
-    monto_impuesto DECIMAL(18, 2) NOT NULL
-    CONSTRAINT df_facturadetalle_impuesto
-    DEFAULT 0,
-
-    subtotal_linea DECIMAL(18, 2) NOT NULL,
-
-    total_linea DECIMAL(18, 2) NOT NULL,
-
-    CONSTRAINT pk_facturadetalle
+    CONSTRAINT pk_factura_detalle
     PRIMARY KEY (factura_detalle_id),
 
     CONSTRAINT fk_facturadetalle_factura
     FOREIGN KEY (factura_id)
     REFERENCES dbo.factura (factura_id),
 
-    CONSTRAINT fk_facturadetalle_productoservicio
-    FOREIGN KEY (producto_servicio_id)
-    REFERENCES dbo.productoservicio (producto_servicio_id),
+    CONSTRAINT fk_facturadetalle_producto
+    FOREIGN KEY (producto_id)
+    REFERENCES dbo.producto (producto_id),
 
-    CONSTRAINT uq_facturadetalle_linea
-    UNIQUE (factura_id, numero_linea),
+    CONSTRAINT fk_facturadetalle_servicio
+    FOREIGN KEY (servicio_id)
+    REFERENCES dbo.servicio (servicio_id),
 
-    CONSTRAINT ck_facturadetalle_numerolinea
-    CHECK (numero_linea > 0),
+    CONSTRAINT ck_facturadetalle_cantidades
+    CHECK (cantidad > 0 AND precio_unitario >= 0),
 
-    CONSTRAINT ck_facturadetalle_cantidad
-    CHECK (cantidad > 0),
-
-    CONSTRAINT ck_facturadetalle_precio
-    CHECK (precio_unitario >= 0),
-
-    CONSTRAINT ck_facturadetalle_impuestoporcentaje
-    CHECK (porcentaje_impuesto >= 0 AND porcentaje_impuesto <= 100),
-
-    CONSTRAINT ck_facturadetalle_descuento
-    CHECK (monto_descuento >= 0),
-
-    CONSTRAINT ck_facturadetalle_impuestomonto
-    CHECK (monto_impuesto >= 0),
-
-    CONSTRAINT ck_facturadetalle_subtotal
-    CHECK (subtotal_linea >= 0),
-
-    CONSTRAINT ck_facturadetalle_total
-    CHECK (total_linea >= 0)
+    CONSTRAINT ck_facturadetalle_producto_o_servicio
+    CHECK (
+        (producto_id IS NOT NULL AND servicio_id IS NULL) OR
+        (servicio_id IS NOT NULL AND producto_id IS NULL)
+    )
 );
 GO
