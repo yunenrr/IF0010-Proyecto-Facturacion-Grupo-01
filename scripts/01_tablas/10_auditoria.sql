@@ -4,8 +4,8 @@ CREATE TABLE dbo.auditoria (
     registro_id BIGINT NOT NULL,
     operacion VARCHAR(10) NOT NULL,
 
-    valor_anterior VARCHAR(MAX) NULL,
-    valor_nuevo VARCHAR(MAX) NULL,
+    valor_anterior VARCHAR(MAX) NOT NULL,
+    valor_nuevo VARCHAR(MAX) NOT NULL,
 
     usuario_sql VARCHAR(128) NOT NULL
     CONSTRAINT df_auditoria_usuario
@@ -15,7 +15,7 @@ CREATE TABLE dbo.auditoria (
     CONSTRAINT df_auditoria_fechaevento
     DEFAULT SYSDATETIME(),
 
-    descripcion VARCHAR(500) NULL,
+    descripcion VARCHAR(500) NOT NULL,
 
     CONSTRAINT pk_auditoria
     PRIMARY KEY (auditoria_id),
