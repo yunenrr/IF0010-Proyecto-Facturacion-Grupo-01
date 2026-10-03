@@ -6,12 +6,8 @@ CREATE TABLE dbo.empresaemisora (
     direccion VARCHAR(250) NOT NULL,
     telefono VARCHAR(20) NOT NULL,
     correo_electronico VARCHAR(150) NOT NULL,
-    fecha_creacion DATETIME2 NOT NULL
-    CONSTRAINT df_empresaemisora_fechacreacion
-    DEFAULT SYSDATETIME(),
-    activa BIT NOT NULL
-    CONSTRAINT df_empresaemisora_activa
-    DEFAULT 1,
+    fecha_creacion DATETIME2 NOT NULL,
+    activa BIT NOT NULL,
 
     CONSTRAINT pk_empresaemisora
     PRIMARY KEY (empresa_id),
