@@ -5,14 +5,8 @@ CREATE TABLE dbo.cliente (
     direccion VARCHAR(250) NOT NULL,
     telefono VARCHAR(20) NOT NULL,
     correo_electronico VARCHAR(150) NOT NULL,
-
-    fecha_registro DATETIME2 NOT NULL
-    CONSTRAINT df_cliente_fecharegistro
-    DEFAULT SYSDATETIME(),
-
-    fecha_ultima_actualizacion DATETIME2 NOT NULL
-    CONSTRAINT df_cliente_fechaultimaactualizacion
-    DEFAULT SYSDATETIME(),
+    fecha_registro DATETIME2 NOT NULL,
+    fecha_ultima_actualizacion DATETIME2 NOT NULL,
 
     CONSTRAINT pk_cliente
     PRIMARY KEY (cliente_id),
