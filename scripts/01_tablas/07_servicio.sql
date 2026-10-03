@@ -5,23 +5,13 @@ CREATE TABLE dbo.servicio (
     precio_unitario DECIMAL(18, 2) NOT NULL,
     porcentaje_impuesto DECIMAL(5, 2) NOT NULL,
     unidad_medida VARCHAR(50) NOT NULL,
-    activo BIT NOT NULL
-    CONSTRAINT df_servicio_activo
-    DEFAULT 1,
-    fecha_creacion DATETIME2 NOT NULL
-    CONSTRAINT df_servicio_fechacreacion
-    DEFAULT SYSDATETIME(),
+    activo BIT NOT NULL,
+    fecha_creacion DATETIME2 NOT NULL,
 
     CONSTRAINT pk_servicio
     PRIMARY KEY (servicio_id),
 
     CONSTRAINT uq_servicio_codigo
-    UNIQUE (codigo_interno),
-
-    CONSTRAINT ck_servicio_precio
-    CHECK (precio_unitario >= 0),
-
-    CONSTRAINT ck_servicio_impuesto
-    CHECK (porcentaje_impuesto >= 0 AND porcentaje_impuesto <= 100)
+    UNIQUE (codigo_interno)
 );
 GO
