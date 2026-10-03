@@ -30,8 +30,8 @@ CREATE TABLE dbo.factura_detalle (
 
     CONSTRAINT ck_facturadetalle_producto_o_servicio
     CHECK (
-        (producto_id IS NOT NULL AND servicio_id IS NULL) OR
-        (servicio_id IS NOT NULL AND producto_id IS NULL)
+        (producto_id IS NOT NULL AND servicio_id IS NULL)
+        OR (servicio_id IS NOT NULL AND producto_id IS NULL)
     )
 );
 GO
