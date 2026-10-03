@@ -1,17 +1,12 @@
 CREATE TABLE dbo.servicio (
-    servicio_id INT IDENTITY (1, 1) NOT NULL,
-    codigo_interno VARCHAR(30) NOT NULL,
-    descripcion VARCHAR(200) NOT NULL,
-    precio_unitario DECIMAL(18, 2) NOT NULL,
-    porcentaje_impuesto DECIMAL(5, 2) NOT NULL,
+    servicio_id INT NOT NULL,
     unidad_medida VARCHAR(50) NOT NULL,
-    activo BIT NOT NULL,
-    fecha_creacion DATETIME2 NOT NULL,
 
     CONSTRAINT pk_servicio
     PRIMARY KEY (servicio_id),
 
-    CONSTRAINT uq_servicio_codigo
-    UNIQUE (codigo_interno)
+    CONSTRAINT fk_servicio_itemfacturable
+    FOREIGN KEY (servicio_id)
+    REFERENCES dbo.item_facturable (item_facturable_id)
 );
 GO
