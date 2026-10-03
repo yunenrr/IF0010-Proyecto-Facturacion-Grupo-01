@@ -23,15 +23,6 @@ CREATE TABLE dbo.factura_detalle (
 
     CONSTRAINT fk_facturadetalle_servicio
     FOREIGN KEY (servicio_id)
-    REFERENCES dbo.servicio (servicio_id),
-
-    CONSTRAINT ck_facturadetalle_cantidades
-    CHECK (cantidad > 0 AND precio_unitario >= 0),
-
-    CONSTRAINT ck_facturadetalle_producto_o_servicio
-    CHECK (
-        (producto_id IS NOT NULL AND servicio_id IS NULL)
-        OR (servicio_id IS NOT NULL AND producto_id IS NULL)
-    )
+    REFERENCES dbo.servicio (servicio_id)
 );
 GO
