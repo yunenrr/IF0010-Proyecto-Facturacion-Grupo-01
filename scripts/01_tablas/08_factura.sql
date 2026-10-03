@@ -14,7 +14,7 @@ CREATE TABLE dbo.factura (
     total_impuestos DECIMAL(18, 2) NOT NULL,
     total_final DECIMAL(18, 2) NOT NULL,
 
-    observaciones VARCHAR(500) NULL,
+    observaciones VARCHAR(500) NOT NULL,
 
     fecha_creacion DATETIME2 NOT NULL
     CONSTRAINT df_factura_fechacreacion
