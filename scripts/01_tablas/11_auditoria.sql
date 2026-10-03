@@ -1,6 +1,6 @@
 CREATE TABLE dbo.auditoria (
     auditoria_id BIGINT IDENTITY (1, 1) NOT NULL,
-    nombre_tabla VARCHAR(100) NOT NULL,
+    factura_id BIGINT NOT NULL,
     tipo_operacion_id INT NOT NULL,
     usuario VARCHAR(100) NOT NULL,
     fecha_cambio DATETIME2 NOT NULL,
@@ -9,6 +9,10 @@ CREATE TABLE dbo.auditoria (
 
     CONSTRAINT pk_auditoria
     PRIMARY KEY (auditoria_id),
+
+    CONSTRAINT fk_auditoria_factura
+    FOREIGN KEY (factura_id)
+    REFERENCES dbo.factura (factura_id),
 
     CONSTRAINT fk_auditoria_tipo_operacion
     FOREIGN KEY (tipo_operacion_id)
