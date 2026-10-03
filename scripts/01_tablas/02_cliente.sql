@@ -25,13 +25,16 @@ CREATE TABLE dbo.cliente (
 
     CONSTRAINT ck_cliente_nombre_razonsocial
     CHECK (
-        (tipo_cliente = 'FISICA'
-        AND nombre IS NOT NULL
-        AND razon_social IS NULL)
-        OR
-        (tipo_cliente = 'JURIDICA'
-        AND nombre IS NULL
-        AND razon_social IS NOT NULL)
+        (
+            tipo_cliente = 'FISICA'
+            AND nombre IS NOT NULL
+            AND razon_social IS NULL
+        )
+        OR (
+            tipo_cliente = 'JURIDICA'
+            AND nombre IS NULL
+            AND razon_social IS NOT NULL
+        )
     )
 );
 GO
