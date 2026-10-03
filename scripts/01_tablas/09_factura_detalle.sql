@@ -54,7 +54,7 @@ CREATE TABLE dbo.facturadetalle (
     CHECK (monto_descuento >= 0),
 
     CONSTRAINT ck_facturadetalle_impuestomonto
-    CHECK (monto_impuesto >= 0), 
+    CHECK (monto_impuesto >= 0),
 
     CONSTRAINT ck_facturadetalle_subtotal
     CHECK (subtotal_linea >= 0),
