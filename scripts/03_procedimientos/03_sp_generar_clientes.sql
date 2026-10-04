@@ -29,8 +29,8 @@ BEGIN
         BEGIN TRANSACTION;
 
         WITH
-        L0 AS (
-            SELECT 1 AS c
+        l0 AS (
+            SELECT v.c
             FROM (
                 VALUES
                     (1), (1), (1), (1), (1),
@@ -38,33 +38,36 @@ BEGIN
             ) AS v(c)
         ),
 
-        L1 AS (
-            SELECT 1 AS c
-            FROM L0 AS a
-            CROSS JOIN L0 AS b
+        l1 AS (
+            SELECT
+                a.c + b.c - 1 AS c
+            FROM l0 AS a
+            CROSS JOIN l0 AS b
         ),
 
-        L2 AS (
-            SELECT 1 AS c
-            FROM L1 AS a
-            CROSS JOIN L1 AS b
+        l2 AS (
+            SELECT
+                a.c + b.c - 1 AS c
+            FROM l1 AS a
+            CROSS JOIN l1 AS b
         ),
 
-        L3 AS (
-            SELECT 1 AS c
-            FROM L2 AS a
-            CROSS JOIN L2 AS b
+        l3 AS (
+            SELECT
+                a.c + b.c - 1 AS c
+            FROM l2 AS a
+            CROSS JOIN l2 AS b
         ),
 
-        Numbers AS (
+        numbers AS (
             SELECT TOP (@faltantes)
                 ROW_NUMBER() OVER (
                     ORDER BY (SELECT NULL)
                 ) AS n
-            FROM L3
+            FROM l3
         ),
 
-        Generador AS (
+        generador AS (
             SELECT
                 n,
 
@@ -172,7 +175,7 @@ BEGIN
                     SYSDATETIME()
                 ) AS fecha_reg
 
-            FROM Numbers
+            FROM numbers
         )
 
         INSERT INTO dbo.cliente (
@@ -208,7 +211,7 @@ BEGIN
 
             fecha_reg
 
-        FROM Generador;
+        FROM generador;
 
         COMMIT TRANSACTION;
 
@@ -224,13 +227,11 @@ BEGIN
     END TRY
 
     BEGIN CATCH
-
         IF @@TRANCOUNT > 0
             ROLLBACK TRANSACTION;
 
         SET @codigo_error = ERROR_NUMBER();
         SET @mensaje_error = ERROR_MESSAGE();
-
     END CATCH;
 END;
 GO
