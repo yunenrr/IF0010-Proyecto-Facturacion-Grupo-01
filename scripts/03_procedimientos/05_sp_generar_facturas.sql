@@ -29,7 +29,11 @@ BEGIN
         DECLARE @estado_pagada_id INT;
         DECLARE @estado_cancelada_id INT;
 
-        -- Obtener los IDs de los catálogos necesarios.
+
+        -- =========================================
+        -- OBTENER CATALOGOS
+        -- =========================================
+
         SELECT @tipo_factura_id = tipo_documento_id
         FROM dbo.tipodocumento
         WHERE codigo = 'FACTURA';
@@ -38,6 +42,7 @@ BEGIN
         FROM dbo.tipodocumento
         WHERE codigo = 'TIQUETE';
 
+
         SELECT @moneda_crc_id = moneda_id
         FROM dbo.moneda
         WHERE codigo = 'CRC';
@@ -45,6 +50,7 @@ BEGIN
         SELECT @moneda_usd_id = moneda_id
         FROM dbo.moneda
         WHERE codigo = 'USD';
+
 
         SELECT @estado_borrador_id = estado_factura_id
         FROM dbo.estadofactura
@@ -62,7 +68,11 @@ BEGIN
         FROM dbo.estadofactura
         WHERE codigo = 'CANCELADA';
 
-        -- Validar que existan datos maestros.
+
+        -- =========================================
+        -- VALIDACIONES
+        -- =========================================
+
         SELECT @total_clientes = COUNT(*)
         FROM dbo.cliente;
 
@@ -72,6 +82,7 @@ BEGIN
         SELECT @total_items = COUNT(*)
         FROM dbo.item_facturable;
 
+
         IF @total_clientes = 0
             OR @total_empresas = 0
             OR @total_items = 0
@@ -79,9 +90,9 @@ BEGIN
             SET @codigo_error = 1;
             SET @mensaje_error =
                 'Se requieren clientes, empresas e items facturables.';
-
             RETURN;
         END;
+
 
         IF @tipo_factura_id IS NULL
             OR @tipo_tiquete_id IS NULL
@@ -95,11 +106,14 @@ BEGIN
             SET @codigo_error = 2;
             SET @mensaje_error =
                 'Faltan registros requeridos en los catalogos.';
-
             RETURN;
         END;
 
-        -- Determinar cuántas facturas faltan.
+
+        -- =========================================
+        -- CANTIDAD DE FACTURAS A GENERAR
+        -- =========================================
+
         SELECT @existentes = COUNT(*)
         FROM dbo.factura;
 
@@ -119,13 +133,17 @@ BEGIN
 
         SET @secuencia_base = @existentes;
 
-        -- Mapear clientes a una numeración continua.
-        CREATE TABLE #clientes (
+
+        -- =========================================
+        -- MAPAS TEMPORALES
+        -- =========================================
+
+        CREATE TABLE #Clientes (
             rn INT PRIMARY KEY,
             cliente_id BIGINT NOT NULL
         );
 
-        INSERT INTO #clientes (
+        INSERT INTO #Clientes (
             rn,
             cliente_id
         )
@@ -136,13 +154,13 @@ BEGIN
             cliente_id
         FROM dbo.cliente;
 
-        -- Mapear empresas a una numeración continua.
-        CREATE TABLE #empresas (
+
+        CREATE TABLE #Empresas (
             rn INT PRIMARY KEY,
             empresa_id INT NOT NULL
         );
 
-        INSERT INTO #empresas (
+        INSERT INTO #Empresas (
             rn,
             empresa_id
         )
@@ -153,8 +171,8 @@ BEGIN
             empresa_id
         FROM dbo.empresaemisora;
 
-        -- Mapear items facturables.
-        CREATE TABLE #items (
+
+        CREATE TABLE #Items (
             rn INT PRIMARY KEY,
             item_facturable_id INT NOT NULL,
             descripcion VARCHAR(200) NOT NULL,
@@ -162,7 +180,7 @@ BEGIN
             porcentaje_impuesto DECIMAL(5, 2) NOT NULL
         );
 
-        INSERT INTO #items (
+        INSERT INTO #Items (
             rn,
             item_facturable_id,
             descripcion,
@@ -179,12 +197,16 @@ BEGIN
             porcentaje_impuesto
         FROM dbo.item_facturable;
 
-        -- Guardar los IDs generados en cada lote.
-        CREATE TABLE #nuevas_facturas (
+
+        CREATE TABLE #NuevasFacturas (
             factura_id BIGINT PRIMARY KEY
         );
 
-        -- Generar las facturas por lotes.
+
+        -- =========================================
+        -- GENERACION POR LOTES
+        -- =========================================
+
         WHILE @faltantes > 0
         BEGIN
             SET @lote_actual =
@@ -194,14 +216,18 @@ BEGIN
                     ELSE @tamano_lote
                 END;
 
-            TRUNCATE TABLE #nuevas_facturas;
+            TRUNCATE TABLE #NuevasFacturas;
 
             BEGIN TRANSACTION;
 
-            -- Crear los encabezados.
-            WITH
-            l0 AS (
-                SELECT v.c
+
+            -- =====================================
+            -- ENCABEZADOS
+            -- =====================================
+
+            ;WITH
+            L0 AS (
+                SELECT 1 AS c
                 FROM (
                     VALUES
                         (1), (1), (1), (1), (1),
@@ -209,36 +235,33 @@ BEGIN
                 ) AS v(c)
             ),
 
-            l1 AS (
-                SELECT
-                    a.c + b.c - 1 AS c
-                FROM l0 AS a
-                CROSS JOIN l0 AS b
+            L1 AS (
+                SELECT 1 AS c
+                FROM L0 AS a
+                CROSS JOIN L0 AS b
             ),
 
-            l2 AS (
-                SELECT
-                    a.c + b.c - 1 AS c
-                FROM l1 AS a
-                CROSS JOIN l1 AS b
+            L2 AS (
+                SELECT 1 AS c
+                FROM L1 AS a
+                CROSS JOIN L1 AS b
             ),
 
-            l3 AS (
-                SELECT
-                    a.c + b.c - 1 AS c
-                FROM l2 AS a
-                CROSS JOIN l2 AS b
+            L3 AS (
+                SELECT 1 AS c
+                FROM L2 AS a
+                CROSS JOIN L2 AS b
             ),
 
-            numbers AS (
+            Numbers AS (
                 SELECT TOP (@lote_actual)
                     ROW_NUMBER() OVER (
                         ORDER BY (SELECT NULL)
                     ) AS n
-                FROM l3
+                FROM L3
             ),
 
-            datos_factura AS (
+            DatosFactura AS (
                 SELECT
                     n,
 
@@ -250,7 +273,7 @@ BEGIN
                         @ahora
                     ) AS fecha_factura
 
-                FROM numbers
+                FROM Numbers
             )
 
             INSERT INTO dbo.factura (
@@ -273,7 +296,7 @@ BEGIN
 
             OUTPUT
                 inserted.factura_id
-            INTO #nuevas_facturas (
+            INTO #NuevasFacturas (
                 factura_id
             )
 
@@ -306,7 +329,8 @@ BEGIN
                     d.fecha_factura,
                     112
                 )
-                + REPLACE(
+                +
+                REPLACE(
                     CONVERT(
                         CHAR(8),
                         d.fecha_factura,
@@ -315,8 +339,10 @@ BEGIN
                     ':',
                     ''
                 )
-                + '-'
-                + CASE
+                +
+                '-'
+                +
+                CASE
                     WHEN d.secuencia % 2 = 0
                         THEN 'FACTURA'
                     ELSE 'TIQUETE'
@@ -326,14 +352,8 @@ BEGIN
 
                 CASE
                     WHEN d.secuencia % 3 = 0
-                        THEN CAST(
-                            500.0000
-                            AS DECIMAL(18, 4)
-                        )
-                    ELSE CAST(
-                        1.0000
-                        AS DECIMAL(18, 4)
-                    )
+                        THEN CAST(500.0000 AS DECIMAL(18, 4))
+                    ELSE CAST(1.0000 AS DECIMAL(18, 4))
                 END,
 
                 0.00,
@@ -347,9 +367,9 @@ BEGIN
 
                 d.fecha_factura
 
-            FROM datos_factura AS d
+            FROM DatosFactura AS d
 
-            INNER JOIN #clientes AS c
+            INNER JOIN #Clientes AS c
                 ON c.rn =
                     (
                         ((d.secuencia * 17 - 1)
@@ -357,7 +377,7 @@ BEGIN
                         + 1
                     )
 
-            INNER JOIN #empresas AS e
+            INNER JOIN #Empresas AS e
                 ON e.rn =
                     (
                         ((d.secuencia - 1)
@@ -365,20 +385,20 @@ BEGIN
                         + 1
                     );
 
-            -- Crear entre tres y cinco detalles por factura.
-            WITH lineas AS (
+
+            -- =====================================
+            -- DETALLES: ENTRE 3 Y 5
+            -- =====================================
+
+            ;WITH Lineas AS (
                 SELECT 1 AS numero_linea
-                UNION ALL
-                SELECT 2
-                UNION ALL
-                SELECT 3
-                UNION ALL
-                SELECT 4
-                UNION ALL
-                SELECT 5
+                UNION ALL SELECT 2
+                UNION ALL SELECT 3
+                UNION ALL SELECT 4
+                UNION ALL SELECT 5
             ),
 
-            datos_detalle AS (
+            DatosDetalle AS (
                 SELECT
                     f.factura_id,
                     l.numero_linea,
@@ -424,11 +444,11 @@ BEGIN
                         )
                     END AS porcentaje_descuento
 
-                FROM #nuevas_facturas AS f
+                FROM #NuevasFacturas AS f
 
-                CROSS JOIN lineas AS l
+                CROSS JOIN Lineas AS l
 
-                INNER JOIN #items AS i
+                INNER JOIN #Items AS i
                     ON i.rn =
                         (
                             (
@@ -447,7 +467,7 @@ BEGIN
                     )
             ),
 
-            calculos AS (
+            Calculos AS (
                 SELECT
                     factura_id,
                     item_facturable_id,
@@ -471,20 +491,12 @@ BEGIN
                         AS DECIMAL(18, 2)
                     ) AS monto_descuento
 
-                FROM datos_detalle
+                FROM DatosDetalle
             ),
 
-            calculos_impuesto AS (
+            CalculosImpuesto AS (
                 SELECT
-                    factura_id,
-                    item_facturable_id,
-                    numero_linea,
-                    descripcion,
-                    cantidad,
-                    precio_unitario,
-                    porcentaje_impuesto,
-                    monto_subtotal,
-                    monto_descuento,
+                    *,
 
                     CAST(
                         (
@@ -498,7 +510,7 @@ BEGIN
                         AS DECIMAL(18, 2)
                     ) AS monto_impuesto
 
-                FROM calculos
+                FROM Calculos
             )
 
             INSERT INTO dbo.factura_detalle (
@@ -534,9 +546,13 @@ BEGIN
                     AS DECIMAL(18, 2)
                 )
 
-            FROM calculos_impuesto;
+            FROM CalculosImpuesto;
 
-            -- Calcular los totales finales del encabezado.
+
+            -- =====================================
+            -- ACTUALIZAR TOTALES DEL ENCABEZADO
+            -- =====================================
+
             UPDATE f
             SET
                 f.monto_subtotal = d.subtotal,
@@ -557,7 +573,7 @@ BEGIN
 
                 FROM dbo.factura_detalle AS fd
 
-                INNER JOIN #nuevas_facturas AS nf
+                INNER JOIN #NuevasFacturas AS nf
                     ON nf.factura_id = fd.factura_id
 
                 GROUP BY
@@ -566,7 +582,9 @@ BEGIN
             ) AS d
                 ON d.factura_id = f.factura_id;
 
+
             COMMIT TRANSACTION;
+
 
             SET @secuencia_base =
                 @secuencia_base + @lote_actual;
@@ -578,6 +596,7 @@ BEGIN
                 @cantidad_objetivo - @existentes;
         END;
 
+
         SET @codigo_error = 0;
 
         SET @mensaje_error =
@@ -587,11 +606,13 @@ BEGIN
     END TRY
 
     BEGIN CATCH
+
         IF @@TRANCOUNT > 0
             ROLLBACK TRANSACTION;
 
         SET @codigo_error = ERROR_NUMBER();
         SET @mensaje_error = ERROR_MESSAGE();
+
     END CATCH;
 END;
 GO
