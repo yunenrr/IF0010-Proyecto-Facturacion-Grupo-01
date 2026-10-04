@@ -1,17 +1,13 @@
-DECLARE @code INT;
-DECLARE @msg VARCHAR(250);
+DECLARE @codigo_error INT;
+DECLARE @mensaje_error VARCHAR(250);
 
 EXEC dbo.sp_generar_facturas
     @cantidad_objetivo = 500000,
     @tamano_lote = 25000,
-    @codigo_error = @code OUTPUT,
-    @mensaje_error = @msg OUTPUT;
+    @codigo_error = @codigo_error OUTPUT,
+    @mensaje_error = @mensaje_error OUTPUT;
 
 SELECT
-    @code AS CodigoError,
-    @msg AS MensajeError;
-
--- Verificación de totales finales
-SELECT COUNT(*) AS Total_Facturas FROM dbo.factura;
-SELECT COUNT(*) AS Total_Detalles FROM dbo.detalle_facturable;
+    @codigo_error AS codigo_error,
+    @mensaje_error AS mensaje_error;
 GO
