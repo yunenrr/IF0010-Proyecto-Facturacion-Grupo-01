@@ -9,9 +9,16 @@ CREATE TABLE dbo.factura (
     numero_factura VARCHAR(50) NOT NULL,
     fecha_emision DATETIME2 NOT NULL,
     tipo_cambio DECIMAL(18, 4) NOT NULL,
+
     monto_subtotal DECIMAL(18, 2) NOT NULL,
+    monto_descuento DECIMAL(18, 2) NOT NULL,
     monto_impuesto DECIMAL(18, 2) NOT NULL,
     monto_total DECIMAL(18, 2) NOT NULL,
+
+    observaciones VARCHAR(500) NOT NULL,
+    fecha_creacion DATETIME2 NOT NULL,
+    fecha_modificacion DATETIME2 NOT NULL,
+    
 
     CONSTRAINT pk_factura
     PRIMARY KEY (factura_id),
