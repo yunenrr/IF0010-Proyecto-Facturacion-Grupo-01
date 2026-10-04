@@ -1,4 +1,4 @@
-USE C21626;
+USE Proyecto-Facturacion-Grupo01;
 GO
 
 CREATE OR ALTER PROCEDURE dbo.sp_generar_productos
