@@ -1,6 +1,3 @@
-USE Proyecto_FacturacionG1;
-GO
-
 DECLARE @codigo_error INT;
 DECLARE @mensaje_error VARCHAR(250);
 
