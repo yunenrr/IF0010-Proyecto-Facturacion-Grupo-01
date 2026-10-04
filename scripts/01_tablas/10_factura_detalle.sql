@@ -2,13 +2,19 @@ CREATE TABLE dbo.factura_detalle (
     factura_detalle_id BIGINT IDENTITY (1, 1) NOT NULL,
     factura_id BIGINT NOT NULL,
     item_facturable_id INT NOT NULL,
+
+    numero_linea INT NOT NULL,
+    descripcion VARCHAR(250) NOT NULL,
+
     cantidad DECIMAL(18, 2) NOT NULL,
     precio_unitario DECIMAL(18, 2) NOT NULL,
     porcentaje_impuesto DECIMAL(5, 2) NOT NULL,
+
     monto_subtotal DECIMAL(18, 2) NOT NULL,
+    monto_descuento DECIMAL(18, 2) NOT NULL,
     monto_impuesto DECIMAL(18, 2) NOT NULL,
     monto_total DECIMAL(18, 2) NOT NULL,
-
+    
     CONSTRAINT pk_factura_detalle
     PRIMARY KEY (factura_detalle_id),
 
