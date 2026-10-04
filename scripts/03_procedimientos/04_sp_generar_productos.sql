@@ -1,6 +1,3 @@
-USE Proyecto_FacturacionG1;
-GO
-
 CREATE OR ALTER PROCEDURE dbo.sp_generar_productos
     @cantidad_objetivo INT = 1000,
     @codigo_error INT OUTPUT,
