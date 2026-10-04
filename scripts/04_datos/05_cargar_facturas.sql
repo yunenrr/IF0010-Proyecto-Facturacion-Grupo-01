@@ -1,6 +1,3 @@
-USE C21626;
-GO
-
 DECLARE @code INT;
 DECLARE @msg VARCHAR(250);
 
