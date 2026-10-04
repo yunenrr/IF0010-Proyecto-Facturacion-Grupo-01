@@ -1,4 +1,4 @@
-USE Proyecto-Facturacion-Grupo01;
+USE Proyecto_FacturacionG1;
 GO
 
 DECLARE @codigo_error INT;
