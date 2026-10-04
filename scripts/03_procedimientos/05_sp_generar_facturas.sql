@@ -269,7 +269,7 @@ BEGIN
 
                     DATEADD(
                         SECOND,
-                        -(@secuencia_base + n),
+                        -((@secuencia_base + n) * 61),
                         @ahora
                     ) AS fecha_factura
 
