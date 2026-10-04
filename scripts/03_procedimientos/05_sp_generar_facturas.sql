@@ -1,6 +1,3 @@
-USE C21626;
-GO
-
 CREATE OR ALTER PROCEDURE dbo.sp_generar_facturas
     @cantidad_objetivo INT = 500000,
     @tamano_lote INT = 25000,
