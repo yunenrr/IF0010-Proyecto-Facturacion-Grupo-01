@@ -1,4 +1,4 @@
-USE Proyecto-Facturacion-Grupo01;
+USE Proyecto_FacturacionG1;
 GO
 
 CREATE OR ALTER PROCEDURE dbo.sp_generar_productos
