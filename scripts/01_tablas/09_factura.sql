@@ -18,7 +18,6 @@ CREATE TABLE dbo.factura (
     observaciones VARCHAR(500) NOT NULL,
     fecha_creacion DATETIME2 NOT NULL,
     fecha_modificacion DATETIME2 NOT NULL,
-    
 
     CONSTRAINT pk_factura
     PRIMARY KEY (factura_id),

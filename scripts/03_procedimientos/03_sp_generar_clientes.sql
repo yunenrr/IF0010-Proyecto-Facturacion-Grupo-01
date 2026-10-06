@@ -1,4 +1,4 @@
-CREATE OR ALTER PROCEDURE dbo.sp_generar_clientes
+CREATE OR ALTER PROCEDURE dbo.usp_generar_clientes
     @cantidad_objetivo INT = 50000,
     @codigo_error INT OUTPUT,
     @mensaje_error VARCHAR(250) OUTPUT
@@ -16,55 +16,56 @@ BEGIN
         SET @faltantes = @cantidad_objetivo - @existentes;
 
         IF @faltantes <= 0
-        BEGIN
-            SET @codigo_error = 0;
-            SET @mensaje_error =
-                'Ya existen '
-                + CAST(@existentes AS VARCHAR(10))
-                + ' o mas clientes en la base de datos.';
+            BEGIN
+                SET @codigo_error = 0;
+                SET
+                    @mensaje_error
+                    = 'Ya existen '
+                    + CAST(@existentes AS VARCHAR(10))
+                    + ' o mas clientes en la base de datos.';
 
-            RETURN;
-        END;
+                RETURN;
+            END;
 
         BEGIN TRANSACTION;
 
         WITH
-        L0 AS (
+        l0 AS (
             SELECT 1 AS c
             FROM (
                 VALUES
-                    (1), (1), (1), (1), (1),
-                    (1), (1), (1), (1), (1)
+                (1), (1), (1), (1), (1),
+                (1), (1), (1), (1), (1)
             ) AS v(c)
         ),
 
-        L1 AS (
+        l1 AS (
             SELECT 1 AS c
-            FROM L0 AS a
-            CROSS JOIN L0 AS b
+            FROM l0 AS a
+            CROSS JOIN l0 AS b
         ),
 
-        L2 AS (
+        l2 AS (
             SELECT 1 AS c
-            FROM L1 AS a
-            CROSS JOIN L1 AS b
+            FROM l1 AS a
+            CROSS JOIN l1 AS b
         ),
 
-        L3 AS (
+        l3 AS (
             SELECT 1 AS c
-            FROM L2 AS a
-            CROSS JOIN L2 AS b
+            FROM l2 AS a
+            CROSS JOIN l2 AS b
         ),
 
-        Numbers AS (
+        numbers AS (
             SELECT TOP (@faltantes)
                 ROW_NUMBER() OVER (
                     ORDER BY (SELECT NULL)
                 ) AS n
-            FROM L3
+            FROM l3
         ),
 
-        Generador AS (
+        generador AS (
             SELECT
                 n,
 
@@ -172,7 +173,7 @@ BEGIN
                     SYSDATETIME()
                 ) AS fecha_reg
 
-            FROM Numbers
+            FROM numbers
         )
 
         INSERT INTO dbo.cliente (
@@ -188,34 +189,37 @@ BEGIN
             cedula,
 
             primer_nombre
-                + ' '
-                + primer_apellido
-                + ' '
-                + segundo_apellido,
+            + ' '
+            + primer_apellido
+            + ' '
+            + segundo_apellido
+                AS nombre_razon_social,
 
             direccion,
 
             telefono,
 
             'cliente'
-                + CAST(
-                    (@existentes + n)
-                    AS VARCHAR(10)
-                )
-                + '@correo.cr',
+            + CAST(
+                (@existentes + n)
+                AS VARCHAR(10)
+            )
+            + '@correo.cr'
+                AS correo_electronico,
 
-            fecha_reg,
+            fecha_reg AS fecha_registro,
 
-            fecha_reg
+            fecha_reg AS fecha_ultima_actualizacion
 
-        FROM Generador;
+        FROM generador;
 
         COMMIT TRANSACTION;
 
         SET @codigo_error = 0;
 
-        SET @mensaje_error =
-            'Clientes generados exitosamente. Total actual: '
+        SET
+            @mensaje_error
+            = 'Clientes generados exitosamente. Total actual: '
             + CAST(
                 (@existentes + @faltantes)
                 AS VARCHAR(10)

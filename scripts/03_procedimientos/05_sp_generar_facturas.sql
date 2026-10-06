@@ -1,4 +1,4 @@
-CREATE OR ALTER PROCEDURE dbo.sp_generar_facturas
+CREATE OR ALTER PROCEDURE dbo.usp_generar_facturas
     @cantidad_objetivo INT = 500000,
     @tamano_lote INT = 25000,
     @codigo_error INT OUTPUT,
@@ -29,7 +29,6 @@ BEGIN
         DECLARE @estado_pagada_id INT;
         DECLARE @estado_cancelada_id INT;
 
-
         -- =========================================
         -- OBTENER CATALOGOS
         -- =========================================
@@ -42,7 +41,6 @@ BEGIN
         FROM dbo.tipodocumento
         WHERE codigo = 'TIQUETE';
 
-
         SELECT @moneda_crc_id = moneda_id
         FROM dbo.moneda
         WHERE codigo = 'CRC';
@@ -50,7 +48,6 @@ BEGIN
         SELECT @moneda_usd_id = moneda_id
         FROM dbo.moneda
         WHERE codigo = 'USD';
-
 
         SELECT @estado_borrador_id = estado_factura_id
         FROM dbo.estadofactura
@@ -68,7 +65,6 @@ BEGIN
         FROM dbo.estadofactura
         WHERE codigo = 'CANCELADA';
 
-
         -- =========================================
         -- VALIDACIONES
         -- =========================================
@@ -82,19 +78,20 @@ BEGIN
         SELECT @total_items = COUNT(*)
         FROM dbo.item_facturable;
 
-
-        IF @total_clientes = 0
+        IF
+            @total_clientes = 0
             OR @total_empresas = 0
             OR @total_items = 0
-        BEGIN
-            SET @codigo_error = 1;
-            SET @mensaje_error =
-                'Se requieren clientes, empresas e items facturables.';
-            RETURN;
-        END;
+            BEGIN
+                SET @codigo_error = 1;
+                SET
+                    @mensaje_error
+                    = 'Se requieren clientes, empresas e items facturables.';
+                RETURN;
+            END;
 
-
-        IF @tipo_factura_id IS NULL
+        IF
+            @tipo_factura_id IS NULL
             OR @tipo_tiquete_id IS NULL
             OR @moneda_crc_id IS NULL
             OR @moneda_usd_id IS NULL
@@ -102,13 +99,13 @@ BEGIN
             OR @estado_emitida_id IS NULL
             OR @estado_pagada_id IS NULL
             OR @estado_cancelada_id IS NULL
-        BEGIN
-            SET @codigo_error = 2;
-            SET @mensaje_error =
-                'Faltan registros requeridos en los catalogos.';
-            RETURN;
-        END;
-
+            BEGIN
+                SET @codigo_error = 2;
+                SET
+                    @mensaje_error
+                    = 'Faltan registros requeridos en los catalogos.';
+                RETURN;
+            END;
 
         -- =========================================
         -- CANTIDAD DE FACTURAS A GENERAR
@@ -120,19 +117,19 @@ BEGIN
         SET @faltantes = @cantidad_objetivo - @existentes;
 
         IF @faltantes <= 0
-        BEGIN
-            SET @codigo_error = 0;
+            BEGIN
+                SET @codigo_error = 0;
 
-            SET @mensaje_error =
-                'Ya existen '
-                + CAST(@existentes AS VARCHAR(10))
-                + ' o mas facturas.';
+                SET
+                    @mensaje_error
+                    = 'Ya existen '
+                    + CAST(@existentes AS VARCHAR(10))
+                    + ' o mas facturas.';
 
-            RETURN;
-        END;
+                RETURN;
+            END;
 
         SET @secuencia_base = @existentes;
-
 
         -- =========================================
         -- MAPAS TEMPORALES
@@ -150,10 +147,9 @@ BEGIN
         SELECT
             ROW_NUMBER() OVER (
                 ORDER BY cliente_id
-            ),
+            ) AS rn,
             cliente_id
         FROM dbo.cliente;
-
 
         CREATE TABLE #Empresas (
             rn INT PRIMARY KEY,
@@ -167,10 +163,9 @@ BEGIN
         SELECT
             ROW_NUMBER() OVER (
                 ORDER BY empresa_id
-            ),
+            ) AS rn,
             empresa_id
         FROM dbo.empresaemisora;
-
 
         CREATE TABLE #Items (
             rn INT PRIMARY KEY,
@@ -190,284 +185,353 @@ BEGIN
         SELECT
             ROW_NUMBER() OVER (
                 ORDER BY item_facturable_id
-            ),
+            ) AS rn,
             item_facturable_id,
             descripcion,
             precio_unitario,
             porcentaje_impuesto
         FROM dbo.item_facturable;
 
-
         CREATE TABLE #NuevasFacturas (
             factura_id BIGINT PRIMARY KEY
         );
-
 
         -- =========================================
         -- GENERACION POR LOTES
         -- =========================================
 
         WHILE @faltantes > 0
-        BEGIN
-            SET @lote_actual =
-                CASE
-                    WHEN @faltantes < @tamano_lote
-                        THEN @faltantes
-                    ELSE @tamano_lote
-                END;
+            BEGIN
+                SET
+                    @lote_actual
+                    = CASE
+                        WHEN @faltantes < @tamano_lote
+                            THEN @faltantes
+                        ELSE @tamano_lote
+                    END;
 
-            TRUNCATE TABLE #NuevasFacturas;
+                TRUNCATE TABLE #NuevasFacturas;
 
-            BEGIN TRANSACTION;
+                BEGIN TRANSACTION;
 
+                -- =====================================
+                -- ENCABEZADOS
+                -- =====================================
 
-            -- =====================================
-            -- ENCABEZADOS
-            -- =====================================
-
-            ;WITH
-            L0 AS (
-                SELECT 1 AS c
-                FROM (
-                    VALUES
+                ; WITH
+                l0 AS (
+                    SELECT 1 AS c
+                    FROM (
+                        VALUES
                         (1), (1), (1), (1), (1),
                         (1), (1), (1), (1), (1)
-                ) AS v(c)
-            ),
+                    ) AS v(c)
+                ),
 
-            L1 AS (
-                SELECT 1 AS c
-                FROM L0 AS a
-                CROSS JOIN L0 AS b
-            ),
+                l1 AS (
+                    SELECT 1 AS c
+                    FROM l0 AS a
+                    CROSS JOIN l0 AS b
+                ),
 
-            L2 AS (
-                SELECT 1 AS c
-                FROM L1 AS a
-                CROSS JOIN L1 AS b
-            ),
+                l2 AS (
+                    SELECT 1 AS c
+                    FROM l1 AS a
+                    CROSS JOIN l1 AS b
+                ),
 
-            L3 AS (
-                SELECT 1 AS c
-                FROM L2 AS a
-                CROSS JOIN L2 AS b
-            ),
+                l3 AS (
+                    SELECT 1 AS c
+                    FROM l2 AS a
+                    CROSS JOIN l2 AS b
+                ),
 
-            Numbers AS (
-                SELECT TOP (@lote_actual)
-                    ROW_NUMBER() OVER (
-                        ORDER BY (SELECT NULL)
-                    ) AS n
-                FROM L3
-            ),
+                numbers AS (
+                    SELECT TOP (@lote_actual)
+                        ROW_NUMBER() OVER (
+                            ORDER BY (SELECT NULL)
+                        ) AS n
+                    FROM l3
+                ),
 
-            DatosFactura AS (
-                SELECT
-                    n,
+                datosfactura AS (
+                    SELECT
+                        n,
 
-                    @secuencia_base + n AS secuencia,
+                        @secuencia_base + n AS secuencia,
 
-                    DATEADD(
-                        SECOND,
-                        -((@secuencia_base + n) * 61),
-                        @ahora
-                    ) AS fecha_factura
+                        DATEADD(
+                            SECOND,
+                            -((@secuencia_base + n) * 61),
+                            @ahora
+                        ) AS fecha_factura
 
-                FROM Numbers
-            )
-
-            INSERT INTO dbo.factura (
-                empresa_id,
-                cliente_id,
-                tipo_documento_id,
-                moneda_id,
-                estado_factura_id,
-                numero_factura,
-                fecha_emision,
-                tipo_cambio,
-                monto_subtotal,
-                monto_descuento,
-                monto_impuesto,
-                monto_total,
-                observaciones,
-                fecha_creacion,
-                fecha_modificacion
-            )
-
-            OUTPUT
-                inserted.factura_id
-            INTO #NuevasFacturas (
-                factura_id
-            )
-
-            SELECT
-                e.empresa_id,
-
-                c.cliente_id,
-
-                CASE
-                    WHEN d.secuencia % 2 = 0
-                        THEN @tipo_factura_id
-                    ELSE @tipo_tiquete_id
-                END,
-
-                CASE
-                    WHEN d.secuencia % 3 = 0
-                        THEN @moneda_usd_id
-                    ELSE @moneda_crc_id
-                END,
-
-                CASE d.secuencia % 4
-                    WHEN 0 THEN @estado_borrador_id
-                    WHEN 1 THEN @estado_emitida_id
-                    WHEN 2 THEN @estado_pagada_id
-                    ELSE @estado_cancelada_id
-                END,
-
-                CONVERT(
-                    CHAR(8),
-                    d.fecha_factura,
-                    112
+                    FROM numbers
                 )
-                +
-                REPLACE(
+
+                INSERT INTO dbo.factura (
+                    empresa_id,
+                    cliente_id,
+                    tipo_documento_id,
+                    moneda_id,
+                    estado_factura_id,
+                    numero_factura,
+                    fecha_emision,
+                    tipo_cambio,
+                    monto_subtotal,
+                    monto_descuento,
+                    monto_impuesto,
+                    monto_total,
+                    observaciones,
+                    fecha_creacion,
+                    fecha_modificacion
+                )
+
+                OUTPUT
+                    INSERTED.factura_id
+                INTO
+                    #NuevasFacturas (
+                        factura_id
+                    )
+
+                SELECT
+                    e.empresa_id,
+
+                    c.cliente_id,
+
+                    CASE
+                        WHEN d.secuencia % 2 = 0
+                            THEN @tipo_factura_id
+                        ELSE @tipo_tiquete_id
+                    END AS tipo_documento_id,
+
+                    CASE
+                        WHEN d.secuencia % 3 = 0
+                            THEN @moneda_usd_id
+                        ELSE @moneda_crc_id
+                    END AS moneda_id,
+
+                    CASE d.secuencia % 4
+                        WHEN 0 THEN @estado_borrador_id
+                        WHEN 1 THEN @estado_emitida_id
+                        WHEN 2 THEN @estado_pagada_id
+                        ELSE @estado_cancelada_id
+                    END AS estado_factura_id,
+
                     CONVERT(
                         CHAR(8),
                         d.fecha_factura,
-                        108
-                    ),
-                    ':',
-                    ''
-                )
-                +
-                '-'
-                +
-                CASE
-                    WHEN d.secuencia % 2 = 0
-                        THEN 'FACTURA'
-                    ELSE 'TIQUETE'
-                END,
-
-                d.fecha_factura,
-
-                CASE
-                    WHEN d.secuencia % 3 = 0
-                        THEN CAST(500.0000 AS DECIMAL(18, 4))
-                    ELSE CAST(1.0000 AS DECIMAL(18, 4))
-                END,
-
-                0.00,
-                0.00,
-                0.00,
-                0.00,
-
-                'Carga masiva de datos de prueba',
-
-                d.fecha_factura,
-
-                d.fecha_factura
-
-            FROM DatosFactura AS d
-
-            INNER JOIN #Clientes AS c
-                ON c.rn =
-                    (
-                        ((d.secuencia * 17 - 1)
-                        % @total_clientes)
-                        + 1
+                        112
                     )
+                    +
+                    REPLACE(
+                        CONVERT(
+                            CHAR(8),
+                            d.fecha_factura,
+                            108
+                        ),
+                        ':',
+                        ''
+                    )
+                    +
+                    '-'
+                    +
+                    CASE
+                        WHEN d.secuencia % 2 = 0
+                            THEN 'FACTURA'
+                        ELSE 'TIQUETE'
+                    END AS numero_factura,
 
-            INNER JOIN #Empresas AS e
-                ON e.rn =
-                    (
-                        ((d.secuencia - 1)
-                        % @total_empresas)
-                        + 1
-                    );
-
-
-            -- =====================================
-            -- DETALLES: ENTRE 3 Y 5
-            -- =====================================
-
-            ;WITH Lineas AS (
-                SELECT 1 AS numero_linea
-                UNION ALL SELECT 2
-                UNION ALL SELECT 3
-                UNION ALL SELECT 4
-                UNION ALL SELECT 5
-            ),
-
-            DatosDetalle AS (
-                SELECT
-                    f.factura_id,
-                    l.numero_linea,
-                    i.item_facturable_id,
-                    i.descripcion,
-                    i.precio_unitario,
-                    i.porcentaje_impuesto,
-
-                    CAST(
-                        (
-                            (
-                                f.factura_id * 3
-                                + l.numero_linea * 7
-                            ) % 10
-                        ) + 1
-                        AS DECIMAL(18, 2)
-                    ) AS cantidad,
+                    d.fecha_factura AS fecha_emision,
 
                     CASE
-                        WHEN
-                            (
-                                f.factura_id
-                                + l.numero_linea
-                            ) % 10 = 0
-                            THEN CAST(
-                                0.10
-                                AS DECIMAL(5, 2)
-                            )
+                        WHEN d.secuencia % 3 = 0
+                            THEN CAST(500.0000 AS DECIMAL(18, 4))
+                        ELSE CAST(1.0000 AS DECIMAL(18, 4))
+                    END AS tipo_cambio,
 
-                        WHEN
-                            (
-                                f.factura_id
-                                + l.numero_linea
-                            ) % 5 = 0
-                            THEN CAST(
-                                0.05
-                                AS DECIMAL(5, 2)
-                            )
+                    0.00 AS monto_subtotal,
+                    0.00 AS monto_descuento,
+                    0.00 AS monto_impuesto,
+                    0.00 AS monto_total,
 
-                        ELSE CAST(
-                            0.00
-                            AS DECIMAL(5, 2)
+                    'Carga masiva de datos de prueba' AS observaciones,
+
+                    d.fecha_factura AS fecha_creacion,
+
+                    d.fecha_factura AS fecha_modificacion
+
+                FROM datosfactura AS d
+
+                INNER JOIN #Clientes AS c
+                    ON
+                        c.rn
+                        = (
+                            (
+                                (d.secuencia * 17 - 1)
+                                % @total_clientes
+                            )
+                            + 1
                         )
-                    END AS porcentaje_descuento
 
-                FROM #NuevasFacturas AS f
+                INNER JOIN #Empresas AS e
+                    ON
+                        e.rn
+                        = (
+                            (
+                                (d.secuencia - 1)
+                                % @total_empresas
+                            )
+                            + 1
+                        );
 
-                CROSS JOIN Lineas AS l
+                -- =====================================
+                -- DETALLES: ENTRE 3 Y 5
+                -- =====================================
 
-                INNER JOIN #Items AS i
-                    ON i.rn =
-                        (
+                ; WITH lineas AS (
+                    SELECT 1 AS numero_linea
+                    UNION ALL
+                    SELECT 2
+                    UNION ALL
+                    SELECT 3
+                    UNION ALL
+                    SELECT 4
+                    UNION ALL
+                    SELECT 5
+                ),
+
+                datosdetalle AS (
+                    SELECT
+                        f.factura_id,
+                        l.numero_linea,
+                        i.item_facturable_id,
+                        i.descripcion,
+                        i.precio_unitario,
+                        i.porcentaje_impuesto,
+
+                        CAST(
                             (
                                 (
-                                    f.factura_id * 11
-                                    + l.numero_linea * 13
-                                    - 1
-                                ) % @total_items
+                                    f.factura_id * 3
+                                    + l.numero_linea * 7
+                                ) % 10
                             ) + 1
+                            AS DECIMAL(18, 2)
+                        ) AS cantidad,
+
+                        CASE
+                            WHEN
+                                (
+                                    f.factura_id
+                                    + l.numero_linea
+                                ) % 10 = 0
+                                THEN CAST(
+                                    0.10
+                                    AS DECIMAL(5, 2)
+                                )
+
+                            WHEN
+                                (
+                                    f.factura_id
+                                    + l.numero_linea
+                                ) % 5 = 0
+                                THEN CAST(
+                                    0.05
+                                    AS DECIMAL(5, 2)
+                                )
+
+                            ELSE CAST(
+                                0.00
+                                AS DECIMAL(5, 2)
+                            )
+                        END AS porcentaje_descuento
+
+                    FROM #NuevasFacturas AS f
+
+                    CROSS JOIN lineas AS l
+
+                    INNER JOIN #Items AS i
+                        ON
+                            i.rn
+                            = (
+                                (
+                                    (
+                                        f.factura_id * 11
+                                        + l.numero_linea * 13
+                                        - 1
+                                    ) % @total_items
+                                ) + 1
+                            )
+
+                    WHERE
+                        l.numero_linea
+                        <= (
+                            (f.factura_id % 3)
+                            + 3
                         )
+                ),
 
-                WHERE l.numero_linea
-                    <= (
-                        (f.factura_id % 3)
-                        + 3
-                    )
-            ),
+                calculos AS (
+                    SELECT
+                        factura_id,
+                        item_facturable_id,
+                        numero_linea,
+                        descripcion,
+                        cantidad,
+                        precio_unitario,
+                        porcentaje_impuesto,
 
-            Calculos AS (
+                        CAST(
+                            cantidad * precio_unitario
+                            AS DECIMAL(18, 2)
+                        ) AS monto_subtotal,
+
+                        CAST(
+                            (
+                                cantidad
+                                * precio_unitario
+                            )
+                            * porcentaje_descuento
+                            AS DECIMAL(18, 2)
+                        ) AS monto_descuento
+
+                    FROM datosdetalle
+                ),
+
+                calculosimpuesto AS (
+                    SELECT
+                        *,
+
+                        CAST(
+                            (
+                                monto_subtotal
+                                - monto_descuento
+                            )
+                            * (
+                                porcentaje_impuesto
+                                / 100.00
+                            )
+                            AS DECIMAL(18, 2)
+                        ) AS monto_impuesto
+
+                    FROM calculos
+                )
+
+                INSERT INTO dbo.factura_detalle (
+                    factura_id,
+                    item_facturable_id,
+                    numero_linea,
+                    descripcion,
+                    cantidad,
+                    precio_unitario,
+                    porcentaje_impuesto,
+                    monto_subtotal,
+                    monto_descuento,
+                    monto_impuesto,
+                    monto_total
+                )
+
                 SELECT
                     factura_id,
                     item_facturable_id,
@@ -476,131 +540,72 @@ BEGIN
                     cantidad,
                     precio_unitario,
                     porcentaje_impuesto,
+                    monto_subtotal,
+                    monto_descuento,
+                    monto_impuesto,
 
                     CAST(
-                        cantidad * precio_unitario
+                        monto_subtotal
+                        - monto_descuento
+                        + monto_impuesto
                         AS DECIMAL(18, 2)
-                    ) AS monto_subtotal,
+                    ) AS monto_total
 
-                    CAST(
-                        (
-                            cantidad
-                            * precio_unitario
-                        )
-                        * porcentaje_descuento
-                        AS DECIMAL(18, 2)
-                    ) AS monto_descuento
+                FROM calculosimpuesto;
 
-                FROM DatosDetalle
-            ),
+                -- =====================================
+                -- ACTUALIZAR TOTALES DEL ENCABEZADO
+                -- =====================================
 
-            CalculosImpuesto AS (
-                SELECT
-                    *,
+                UPDATE f
+                SET
+                    f.monto_subtotal = d.subtotal,
+                    f.monto_descuento = d.descuento,
+                    f.monto_impuesto = d.impuesto,
+                    f.monto_total = d.total,
+                    f.fecha_modificacion = SYSDATETIME()
 
-                    CAST(
-                        (
-                            monto_subtotal
-                            - monto_descuento
-                        )
-                        * (
-                            porcentaje_impuesto
-                            / 100.00
-                        )
-                        AS DECIMAL(18, 2)
-                    ) AS monto_impuesto
+                FROM dbo.factura AS f
 
-                FROM Calculos
-            )
+                INNER JOIN (
+                    SELECT
+                        fd.factura_id,
+                        SUM(fd.monto_subtotal) AS subtotal,
+                        SUM(fd.monto_descuento) AS descuento,
+                        SUM(fd.monto_impuesto) AS impuesto,
+                        SUM(fd.monto_total) AS total
 
-            INSERT INTO dbo.factura_detalle (
-                factura_id,
-                item_facturable_id,
-                numero_linea,
-                descripcion,
-                cantidad,
-                precio_unitario,
-                porcentaje_impuesto,
-                monto_subtotal,
-                monto_descuento,
-                monto_impuesto,
-                monto_total
-            )
+                    FROM dbo.factura_detalle AS fd
 
-            SELECT
-                factura_id,
-                item_facturable_id,
-                numero_linea,
-                descripcion,
-                cantidad,
-                precio_unitario,
-                porcentaje_impuesto,
-                monto_subtotal,
-                monto_descuento,
-                monto_impuesto,
+                    INNER JOIN #NuevasFacturas AS nf
+                        ON fd.factura_id = nf.factura_id
 
-                CAST(
-                    monto_subtotal
-                    - monto_descuento
-                    + monto_impuesto
-                    AS DECIMAL(18, 2)
-                )
+                    GROUP BY
+                        fd.factura_id
 
-            FROM CalculosImpuesto;
+                ) AS d
+                    ON f.factura_id = d.factura_id;
 
+                COMMIT TRANSACTION;
 
-            -- =====================================
-            -- ACTUALIZAR TOTALES DEL ENCABEZADO
-            -- =====================================
+                SET
+                    @secuencia_base
+                    = @secuencia_base + @lote_actual;
 
-            UPDATE f
-            SET
-                f.monto_subtotal = d.subtotal,
-                f.monto_descuento = d.descuento,
-                f.monto_impuesto = d.impuesto,
-                f.monto_total = d.total,
-                f.fecha_modificacion = SYSDATETIME()
+                SET
+                    @existentes
+                    = @existentes + @lote_actual;
 
-            FROM dbo.factura AS f
-
-            INNER JOIN (
-                SELECT
-                    fd.factura_id,
-                    SUM(fd.monto_subtotal) AS subtotal,
-                    SUM(fd.monto_descuento) AS descuento,
-                    SUM(fd.monto_impuesto) AS impuesto,
-                    SUM(fd.monto_total) AS total
-
-                FROM dbo.factura_detalle AS fd
-
-                INNER JOIN #NuevasFacturas AS nf
-                    ON nf.factura_id = fd.factura_id
-
-                GROUP BY
-                    fd.factura_id
-
-            ) AS d
-                ON d.factura_id = f.factura_id;
-
-
-            COMMIT TRANSACTION;
-
-
-            SET @secuencia_base =
-                @secuencia_base + @lote_actual;
-
-            SET @existentes =
-                @existentes + @lote_actual;
-
-            SET @faltantes =
-                @cantidad_objetivo - @existentes;
-        END;
-
+                SET
+                    @faltantes
+                    = @cantidad_objetivo - @existentes;
+            END;
 
         SET @codigo_error = 0;
 
-        SET @mensaje_error =
-            'Facturas generadas exitosamente. Total actual: '
+        SET
+            @mensaje_error
+            = 'Facturas generadas exitosamente. Total actual: '
             + CAST(@existentes AS VARCHAR(10));
 
     END TRY

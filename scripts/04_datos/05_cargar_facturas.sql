@@ -1,7 +1,7 @@
 DECLARE @codigo_error INT;
 DECLARE @mensaje_error VARCHAR(250);
 
-EXEC dbo.sp_generar_facturas
+EXEC dbo.usp_generar_facturas
     @cantidad_objetivo = 500000,
     @tamano_lote = 25000,
     @codigo_error = @codigo_error OUTPUT,

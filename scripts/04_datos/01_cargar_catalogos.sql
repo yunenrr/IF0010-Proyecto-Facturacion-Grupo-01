@@ -1,7 +1,7 @@
 DECLARE @codigo_error INT;
 DECLARE @mensaje_error VARCHAR(4000);
 
-EXEC dbo.sp_cargar_catalogos
+EXEC dbo.usp_cargar_catalogos
     @codigo_error = @codigo_error OUTPUT,
     @mensaje_error = @mensaje_error OUTPUT;
 

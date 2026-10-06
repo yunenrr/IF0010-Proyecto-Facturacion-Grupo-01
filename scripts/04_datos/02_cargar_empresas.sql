@@ -1,7 +1,7 @@
 DECLARE @codigo_error INT;
 DECLARE @mensaje_error VARCHAR(4000);
 
-EXEC dbo.sp_generar_empresas
+EXEC dbo.usp_generar_empresas
     @cantidad_objetivo = 100,
     @codigo_error = @codigo_error OUTPUT,
     @mensaje_error = @mensaje_error OUTPUT;

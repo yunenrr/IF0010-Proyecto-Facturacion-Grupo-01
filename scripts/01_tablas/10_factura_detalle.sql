@@ -14,7 +14,7 @@ CREATE TABLE dbo.factura_detalle (
     monto_descuento DECIMAL(18, 2) NOT NULL,
     monto_impuesto DECIMAL(18, 2) NOT NULL,
     monto_total DECIMAL(18, 2) NOT NULL,
-    
+
     CONSTRAINT pk_factura_detalle
     PRIMARY KEY (factura_detalle_id),
 
