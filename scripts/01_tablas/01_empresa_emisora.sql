@@ -1,3 +1,12 @@
+IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'ProyectoFacturacion')
+BEGIN
+    CREATE DATABASE ProyectoFacturacion;
+END
+GO
+
+USE ProyectoFacturacion;
+GO
+
 CREATE TABLE dbo.empresaemisora (
     empresa_id INT IDENTITY (1, 1) NOT NULL,
     nombre_comercial VARCHAR(100) NOT NULL,
