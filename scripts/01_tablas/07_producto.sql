@@ -1,12 +1,14 @@
-CREATE TABLE dbo.producto (
-    producto_id INT NOT NULL,
-    existencia INT NOT NULL,
+USE C21626;
+GO
 
-    CONSTRAINT pk_producto
-    PRIMARY KEY (producto_id),
-
-    CONSTRAINT fk_producto_itemfacturable
-    FOREIGN KEY (producto_id)
-    REFERENCES dbo.item_facturable (item_facturable_id)
+CREATE TABLE dbo.producto_con_existencia (
+    producto_con_existencia_id INT IDENTITY(1, 1) NOT NULL,
+    codigo_producto VARCHAR(50) NOT NULL,
+    nombre VARCHAR(150) NOT NULL,
+    stock_actual INT NOT NULL,
+    precio_unitario DECIMAL(18, 2) NOT NULL,
+    porcentaje_impuesto DECIMAL(5, 2) NOT NULL,
+    CONSTRAINT PK_producto_con_existencia PRIMARY KEY (producto_con_existencia_id),
+    CONSTRAINT UQ_producto_codigo UNIQUE (codigo_producto)
 );
 GO
