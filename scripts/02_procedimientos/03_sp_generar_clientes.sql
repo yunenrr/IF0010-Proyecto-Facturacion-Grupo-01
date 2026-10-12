@@ -1,240 +1,53 @@
-CREATE OR ALTER PROCEDURE dbo.usp_generar_clientes
-    @cantidad_objetivo INT = 50000,
-    @codigo_error INT OUTPUT,
-    @mensaje_error VARCHAR(250) OUTPUT
+USE C21626;
+GO
+
+IF OBJECT_ID('dbo.sp_generar_clientes', 'P') IS NOT NULL
+    DROP PROCEDURE dbo.sp_generar_clientes;
+GO
+
+CREATE PROCEDURE dbo.sp_generar_clientes
 AS
 BEGIN
     SET NOCOUNT ON;
 
     BEGIN TRY
-        DECLARE @existentes INT;
-        DECLARE @faltantes INT;
-
-        SELECT @existentes = COUNT(*)
-        FROM dbo.cliente;
-
-        SET @faltantes = @cantidad_objetivo - @existentes;
-
-        IF @faltantes <= 0
-            BEGIN
-                SET @codigo_error = 0;
-                SET
-                    @mensaje_error
-                    = 'Ya existen '
-                    + CAST(@existentes AS VARCHAR(10))
-                    + ' o mas clientes en la base de datos.';
-
-                RETURN;
-            END;
-
         BEGIN TRANSACTION;
 
-        WITH
-        l0 AS (
-            SELECT 1 AS c
-            FROM (
-                VALUES
-                (1), (1), (1), (1), (1),
-                (1), (1), (1), (1), (1)
-            ) AS v(c)
-        ),
+        -- Insertar clientes de prueba si las tablas están vacías
+        IF NOT EXISTS (SELECT 1 FROM dbo.cliente_fisico) AND NOT EXISTS (SELECT 1 FROM dbo.cliente_juridico)
+        BEGIN
+            -- 1. Insertar dirección de prueba para cliente físico
+            INSERT INTO dbo.cliente_direccion (id_provincia, id_canton, id_distrito, detalles)
+            VALUES (1, 1, 1, 'San José, Centro');
+            
+            DECLARE @id_dir_fisico INT = SCOPE_IDENTITY();
 
-        l1 AS (
-            SELECT 1 AS c
-            FROM l0 AS a
-            CROSS JOIN l0 AS b
-        ),
+            -- 2. Insertar cliente físico de prueba
+            INSERT INTO dbo.cliente_fisico (cedula, nombre, primer_apellido, segundo_apellido, correo, telefono, id_direccion)
+            VALUES ('101110111', 'Juan', 'Pérez', 'Gómez', 'juan.perez@email.com', '88888888', @id_dir_fisico);
 
-        l2 AS (
-            SELECT 1 AS c
-            FROM l1 AS a
-            CROSS JOIN l1 AS b
-        ),
+            -- 3. Insertar dirección de prueba para cliente jurídico
+            INSERT INTO dbo.cliente_direccion (id_provincia, id_canton, id_distrito, detalles)
+            VALUES (2, 1, 1, 'Alajuela, Centro');
+            
+            DECLARE @id_dir_juridico INT = SCOPE_IDENTITY();
 
-        l3 AS (
-            SELECT 1 AS c
-            FROM l2 AS a
-            CROSS JOIN l2 AS b
-        ),
-
-        numbers AS (
-            SELECT TOP (@faltantes)
-                ROW_NUMBER() OVER (
-                    ORDER BY (SELECT NULL)
-                ) AS n
-            FROM l3
-        ),
-
-        generador AS (
-            SELECT
-                n,
-
-                CAST(
-                    100000000 + @existentes + n
-                    AS VARCHAR(20)
-                ) AS cedula,
-
-                CHOOSE(
-                    (n % 20) + 1,
-                    'Carlos',
-                    'Ana',
-                    'Luis',
-                    'Maria',
-                    'Jose',
-                    'Sofia',
-                    'Juan',
-                    'Laura',
-                    'Diego',
-                    'Lucia',
-                    'Pedro',
-                    'Elena',
-                    'Jorge',
-                    'Valeria',
-                    'Gabriel',
-                    'Camila',
-                    'Fernando',
-                    'Paula',
-                    'Andres',
-                    'Daniela'
-                ) AS primer_nombre,
-
-                CHOOSE(
-                    ((n / 20) % 20) + 1,
-                    'Rodriguez',
-                    'Gonzalez',
-                    'Lopez',
-                    'Jimenez',
-                    'Mora',
-                    'Vargas',
-                    'Castro',
-                    'Sanchez',
-                    'Rojas',
-                    'Navarro',
-                    'Solano',
-                    'Alvarado',
-                    'Araya',
-                    'Chaves',
-                    'Gomez',
-                    'Fernandez',
-                    'Garcia',
-                    'Perez',
-                    'Herrera',
-                    'Soto'
-                ) AS primer_apellido,
-
-                CHOOSE(
-                    ((n / 400) % 20) + 1,
-                    'Mora',
-                    'Vargas',
-                    'Castro',
-                    'Sanchez',
-                    'Rojas',
-                    'Navarro',
-                    'Solano',
-                    'Alvarado',
-                    'Araya',
-                    'Chaves',
-                    'Gomez',
-                    'Fernandez',
-                    'Garcia',
-                    'Perez',
-                    'Herrera',
-                    'Rodriguez',
-                    'Gonzalez',
-                    'Lopez',
-                    'Jimenez',
-                    'Soto'
-                ) AS segundo_apellido,
-
-                '8'
-                + RIGHT(
-                    '0000000'
-                    + CAST(
-                        (@existentes + n)
-                        AS VARCHAR(10)
-                    ),
-                    7
-                ) AS telefono,
-
-                CHOOSE(
-                    (n % 7) + 1,
-                    'San Jose, Escazu, Centro',
-                    'Cartago, Paraiso, Llanos de Santa Lucia',
-                    'Alajuela, San Carlos, Ciudad Quesada',
-                    'Heredia, Belen, San Antonio',
-                    'Guanacaste, Liberia, Centro',
-                    'Puntarenas, Esparza, Espiritu Santo',
-                    'Limon, Pococi, Guapiles'
-                ) AS direccion,
-
-                DATEADD(
-                    MINUTE,
-                    -(n % 525600),
-                    SYSDATETIME()
-                ) AS fecha_reg
-
-            FROM numbers
-        )
-
-        INSERT INTO dbo.cliente (
-            cedula,
-            nombre_razon_social,
-            direccion,
-            telefono,
-            correo_electronico,
-            fecha_registro,
-            fecha_ultima_actualizacion
-        )
-        SELECT
-            cedula,
-
-            primer_nombre
-            + ' '
-            + primer_apellido
-            + ' '
-            + segundo_apellido
-                AS nombre_razon_social,
-
-            direccion,
-
-            telefono,
-
-            'cliente'
-            + CAST(
-                (@existentes + n)
-                AS VARCHAR(10)
-            )
-            + '@correo.cr'
-                AS correo_electronico,
-
-            fecha_reg AS fecha_registro,
-
-            fecha_reg AS fecha_ultima_actualizacion
-
-        FROM generador;
+            -- 4. Insertar cliente jurídico de prueba
+            INSERT INTO dbo.cliente_juridico (cedula_juridica, razon_social, nombre_comercial, correo, telefono, id_direccion)
+            VALUES ('3101123456', 'Empresa Ejemplo S.A.', 'Ejemplo SA', 'contacto@ejemplo.com', '22222222', @id_dir_juridico);
+        END
 
         COMMIT TRANSACTION;
-
-        SET @codigo_error = 0;
-
-        SET
-            @mensaje_error
-            = 'Clientes generados exitosamente. Total actual: '
-            + CAST(
-                (@existentes + @faltantes)
-                AS VARCHAR(10)
-            );
-
     END TRY
-
     BEGIN CATCH
-
         IF @@TRANCOUNT > 0
             ROLLBACK TRANSACTION;
 
-        SET @codigo_error = ERROR_NUMBER();
-        SET @mensaje_error = ERROR_MESSAGE();
+        DECLARE @ErrorMessage NVARCHAR(4000) = ERROR_MESSAGE();
+        DECLARE @ErrorSeverity INT = ERROR_SEVERITY();
+        DECLARE @ErrorState INT = ERROR_STATE();
 
-    END CATCH;
+        RAISERROR (@ErrorMessage, @ErrorSeverity, @ErrorState);
+    END CATCH
 END;
 GO
