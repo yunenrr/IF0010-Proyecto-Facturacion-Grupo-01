@@ -1,22 +1,24 @@
 USE C21626;
 GO
 
-CREATE OR ALTER PROCEDURE dbo.sp_registrar_cliente
-    @identificacion VARCHAR(20),
+IF OBJECT_ID('dbo.sp_registrar_cliente', 'P') IS NOT NULL
+    DROP PROCEDURE dbo.sp_registrar_cliente;
+GO
+
+CREATE PROCEDURE dbo.sp_registrar_cliente
     @tipo_persona CHAR(1), -- 'F' para Físico, 'J' para Jurídico
-    @correo VARCHAR(150),
-    @telefono VARCHAR(20),
-    @distrito_id INT,
-    @otras_senas VARCHAR(250),
-    -- Parámetros para cliente físico
-    @nombre VARCHAR(50) = NULL,
-    @apellido1 VARCHAR(50) = NULL,
-    @apellido2 VARCHAR(50) = NULL,
-    -- Parámetros para cliente jurídico
+    @identificacion VARCHAR(20),
+    @nombre VARCHAR(50),
+    @primer_apellido VARCHAR(50) = NULL,
+    @segundo_apellido VARCHAR(50) = NULL,
     @razon_social VARCHAR(150) = NULL,
     @nombre_comercial VARCHAR(150) = NULL,
-    @codigo_error INT OUTPUT,
-    @mensaje_error VARCHAR(250) OUTPUT
+    @correo VARCHAR(100),
+    @telefono VARCHAR(20),
+    @id_provincia INT,
+    @id_canton INT,
+    @id_distrito INT,
+    @detalles_direccion VARCHAR(250)
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -24,48 +26,39 @@ BEGIN
     BEGIN TRY
         BEGIN TRANSACTION;
 
-        -- 1. Insertar en la tabla base cliente
-        INSERT INTO dbo.cliente (
-            identificacion,
-            tipo_persona,
-            correo,
-            telefono,
-            distrito_id,
-            otras_senas
-        )
-        VALUES (
-            @identificacion,
-            @tipo_persona,
-            @correo,
-            @telefono,
-            @distrito_id,
-            @otras_senas
-        );
+        -- 1. Insertar la dirección normalizada
+        INSERT INTO dbo.cliente_direccion (id_provincia, id_canton, id_distrito, detalles)
+        VALUES (@id_provincia, @id_canton, @id_distrito, @detalles_direccion);
 
-        DECLARE @nuevo_cliente_id INT = SCOPE_IDENTITY();
+        DECLARE @id_direccion INT = SCOPE_IDENTITY();
 
-        -- 2. Insertar en el subtipo correspondiente
+        -- 2. Insertar según el tipo de persona (Físico o Jurídico)
         IF @tipo_persona = 'F'
         BEGIN
-            INSERT INTO dbo.cliente_fisico (cliente_id, nombre, apellido1, apellido2)
-            VALUES (@nuevo_cliente_id, @nombre, @apellido1, @apellido2);
+            INSERT INTO dbo.cliente_fisico (cedula, nombre, primer_apellido, segundo_apellido, correo, telefono, id_direccion)
+            VALUES (@identificacion, @nombre, @primer_apellido, @segundo_apellido, @correo, @telefono, @id_direccion);
         END
         ELSE IF @tipo_persona = 'J'
         BEGIN
-            INSERT INTO dbo.cliente_juridico (cliente_id, razon_social, nombre_comercial)
-            VALUES (@nuevo_cliente_id, @razon_social, @nombre_comercial);
+            INSERT INTO dbo.cliente_juridico (cedula_juridica, razon_social, nombre_comercial, correo, telefono, id_direccion)
+            VALUES (@identificacion, @razon_social, @nombre_comercial, @correo, @telefono, @id_direccion);
+        }
+        ELSE
+        BEGIN
+            RAISERROR('Tipo de persona inválido. Use F (Físico) o J (Jurídico).', 16, 1);
         END
 
         COMMIT TRANSACTION;
-        SET @codigo_error = 0;
-        SET @mensaje_error = 'Cliente registrado exitosamente con ID: ' + CAST(@nuevo_cliente_id AS VARCHAR(10));
     END TRY
     BEGIN CATCH
         IF @@TRANCOUNT > 0
             ROLLBACK TRANSACTION;
 
-        SET @codigo_error = ERROR_NUMBER();
-        SET @mensaje_error = ERROR_MESSAGE();
+        DECLARE @ErrorMessage NVARCHAR(4000) = ERROR_MESSAGE();
+        DECLARE @ErrorSeverity INT = ERROR_SEVERITY();
+        DECLARE @ErrorState INT = ERROR_STATE();
+
+        RAISERROR (@ErrorMessage, @ErrorSeverity, @ErrorState);
     END CATCH
 END;
 GO
