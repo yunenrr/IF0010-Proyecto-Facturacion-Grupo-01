@@ -1,7 +1,10 @@
+USE ProyectoFacturacion;
+GO
+
 CREATE TABLE dbo.factura (
     factura_id BIGINT IDENTITY (1, 1) NOT NULL,
     empresa_id INT NOT NULL,
-    cliente_id BIGINT NOT NULL,
+    cliente_id INT NOT NULL,
     tipo_documento_id INT NOT NULL,
     moneda_id INT NOT NULL,
     estado_factura_id INT NOT NULL,

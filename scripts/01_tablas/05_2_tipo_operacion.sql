@@ -1,3 +1,6 @@
+USE ProyectoFacturacion;
+GO
+
 CREATE TABLE dbo.tipo_operacion (
     tipo_operacion_id INT IDENTITY (1, 1) NOT NULL,
     descripcion VARCHAR(20) NOT NULL,

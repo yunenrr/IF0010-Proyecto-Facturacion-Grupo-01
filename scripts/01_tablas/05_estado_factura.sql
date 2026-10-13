@@ -1,3 +1,6 @@
+USE ProyectoFacturacion;
+GO
+
 CREATE TABLE dbo.estadofactura (
     estado_factura_id INT IDENTITY (1, 1) NOT NULL,
     codigo VARCHAR(20) NOT NULL,

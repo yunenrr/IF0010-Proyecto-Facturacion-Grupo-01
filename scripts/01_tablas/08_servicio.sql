@@ -1,3 +1,6 @@
+USE ProyectoFacturacion;
+GO
+
 CREATE TABLE dbo.servicio (
     servicio_id INT NOT NULL,
     unidad_medida_id INT NOT NULL,

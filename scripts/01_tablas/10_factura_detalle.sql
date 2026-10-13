@@ -1,3 +1,6 @@
+USE ProyectoFacturacion;
+GO
+
 CREATE TABLE dbo.factura_detalle (
     factura_detalle_id BIGINT IDENTITY (1, 1) NOT NULL,
     factura_id BIGINT NOT NULL,

@@ -1,3 +1,6 @@
+USE ProyectoFacturacion;
+GO
+
 CREATE TABLE dbo.item_facturable (
     item_facturable_id INT IDENTITY (1, 1) NOT NULL,
     codigo_interno VARCHAR(30) NOT NULL,

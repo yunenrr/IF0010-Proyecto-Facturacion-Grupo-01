@@ -1,3 +1,6 @@
+USE ProyectoFacturacion;
+GO
+
 CREATE TABLE dbo.moneda (
     moneda_id INT IDENTITY (1, 1) NOT NULL,
     codigo CHAR(3) NOT NULL,

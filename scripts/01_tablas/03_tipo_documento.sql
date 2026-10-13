@@ -1,3 +1,6 @@
+USE ProyectoFacturacion;
+GO
+
 CREATE TABLE dbo.tipodocumento (
     tipo_documento_id INT IDENTITY (1, 1) NOT NULL,
     codigo VARCHAR(10) NOT NULL,
