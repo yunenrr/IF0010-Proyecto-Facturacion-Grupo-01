@@ -1,7 +1,13 @@
-USE ProyectoFacturacion;
+USE PROYECTOFACTURACION;
 GO
 
-CREATE NONCLUSTERED INDEX ix_facturadetalle_factura
-    ON dbo.factura_detalle (factura_id)
-    INCLUDE (numero_linea, monto_subtotal, monto_descuento, monto_impuesto, monto_total);
+CREATE NONCLUSTERED INDEX IX_FACTURADETALLE_FACTURA
+    ON DBO.FACTURA_DETALLE (FACTURA_ID)
+    INCLUDE (
+        NUMERO_LINEA,
+        MONTO_SUBTOTAL,
+        MONTO_DESCUENTO,
+        MONTO_IMPUESTO,
+        MONTO_TOTAL
+    );
 GO

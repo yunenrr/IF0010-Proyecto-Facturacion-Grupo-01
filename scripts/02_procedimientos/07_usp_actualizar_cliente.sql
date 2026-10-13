@@ -1,12 +1,12 @@
-USE ProyectoFacturacion;
+USE PROYECTOFACTURACION;
 GO
 
-DROP PROCEDURE IF EXISTS dbo.usp_actualizar_cliente;
+DROP PROCEDURE IF EXISTS DBO.USP_ACTUALIZAR_CLIENTE;
 GO
 
 -- Actualiza los datos de contacto del comprador: correo, telefono y direccion
 -- (distrito normalizado + otras senas). Refresca fecha_actualizacion.
-CREATE PROCEDURE dbo.usp_actualizar_cliente
+CREATE PROCEDURE DBO.USP_ACTUALIZAR_CLIENTE
     @cliente_id INT,
     @correo VARCHAR(150),
     @telefono VARCHAR(20),
@@ -25,47 +25,57 @@ BEGIN
     BEGIN TRY
         BEGIN TRANSACTION;
 
-        IF NOT EXISTS (SELECT 1 FROM dbo.cliente WHERE cliente_id = @cliente_id)
-        BEGIN
-            THROW 50111, 'El cliente indicado no existe.', 1;
-        END
+        IF
+            NOT EXISTS (
+                SELECT 1 FROM DBO.CLIENTE
+                WHERE CLIENTE_ID = @cliente_id
+            )
+            BEGIN
+                THROW 50111, 'El cliente indicado no existe.', 1;
+            END
 
         IF CHARINDEX('@', @correo) < 2
-        BEGIN
-            THROW 50112, 'El correo electronico no es valido.', 1;
-        END
+            BEGIN
+                THROW 50112, 'El correo electronico no es valido.', 1;
+            END
 
         IF LEN(LTRIM(RTRIM(@telefono))) = 0
-        BEGIN
-            THROW 50113, 'El telefono es obligatorio.', 1;
-        END
+            BEGIN
+                THROW 50113, 'El telefono es obligatorio.', 1;
+            END
 
         IF LEN(LTRIM(RTRIM(@otras_senas))) = 0
-        BEGIN
-            THROW 50114, 'Las otras senas de la direccion son obligatorias.', 1;
-        END
+            BEGIN
+                THROW 50114,
+                'Las otras senas de la direccion son obligatorias.',
+                1;
+            END
 
-        IF NOT EXISTS (SELECT 1 FROM dbo.distrito WHERE distrito_id = @distrito_id)
-        BEGIN
-            THROW 50115, 'El distrito indicado no existe.', 1;
-        END
+        IF
+            NOT EXISTS (
+                SELECT 1 FROM DBO.DISTRITO
+                WHERE DISTRITO_ID = @distrito_id
+            )
+            BEGIN
+                THROW 50115, 'El distrito indicado no existe.', 1;
+            END
 
-        UPDATE dbo.cliente
+        UPDATE DBO.CLIENTE
         SET
-            correo = @correo,
-            telefono = @telefono,
-            distrito_id = @distrito_id,
-            otras_senas = @otras_senas,
-            fecha_actualizacion = SYSDATETIME()
-        WHERE cliente_id = @cliente_id;
+            CORREO = @correo,
+            TELEFONO = @telefono,
+            DISTRITO_ID = @distrito_id,
+            OTRAS_SENAS = @otras_senas,
+            FECHA_ACTUALIZACION = SYSDATETIME()
+        WHERE CLIENTE_ID = @cliente_id;
 
         COMMIT TRANSACTION;
     END TRY
     BEGIN CATCH
         IF @@TRANCOUNT > 0
-        BEGIN
-            ROLLBACK TRANSACTION;
-        END
+            BEGIN
+                ROLLBACK TRANSACTION;
+            END
 
         SET @codigo_error = ERROR_NUMBER();
         SET @mensaje_error = LEFT(ERROR_MESSAGE(), 250);

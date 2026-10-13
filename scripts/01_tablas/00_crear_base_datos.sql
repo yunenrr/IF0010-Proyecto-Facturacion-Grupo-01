@@ -1,8 +1,8 @@
 IF DB_ID('ProyectoFacturacion') IS NULL
-BEGIN
-    CREATE DATABASE ProyectoFacturacion;
-END
+    BEGIN
+        CREATE DATABASE PROYECTOFACTURACION;
+    END
 GO
 
-USE ProyectoFacturacion;
+USE PROYECTOFACTURACION;
 GO

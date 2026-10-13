@@ -1,23 +1,23 @@
-USE ProyectoFacturacion;
+USE PROYECTOFACTURACION;
 GO
 
-CREATE TABLE dbo.distrito (
-    distrito_id INT IDENTITY (1, 1) NOT NULL,
-    canton_id INT NOT NULL,
-    codigo_hacienda CHAR(2) NOT NULL,
-    nombre VARCHAR(100) NOT NULL,
+CREATE TABLE DBO.DISTRITO (
+    DISTRITO_ID INT IDENTITY (1, 1) NOT NULL,
+    CANTON_ID INT NOT NULL,
+    CODIGO_HACIENDA CHAR(2) NOT NULL,
+    NOMBRE VARCHAR(100) NOT NULL,
 
-    CONSTRAINT pk_distrito
-    PRIMARY KEY (distrito_id),
+    CONSTRAINT PK_DISTRITO
+    PRIMARY KEY (DISTRITO_ID),
 
-    CONSTRAINT uq_distrito_canton_codigo
-    UNIQUE (canton_id, codigo_hacienda),
+    CONSTRAINT UQ_DISTRITO_CANTON_CODIGO
+    UNIQUE (CANTON_ID, CODIGO_HACIENDA),
 
-    CONSTRAINT uq_distrito_canton_nombre
-    UNIQUE (canton_id, nombre),
+    CONSTRAINT UQ_DISTRITO_CANTON_NOMBRE
+    UNIQUE (CANTON_ID, NOMBRE),
 
-    CONSTRAINT fk_distrito_canton
-    FOREIGN KEY (canton_id)
-    REFERENCES dbo.canton (canton_id)
+    CONSTRAINT FK_DISTRITO_CANTON
+    FOREIGN KEY (CANTON_ID)
+    REFERENCES DBO.CANTON (CANTON_ID)
 );
 GO

@@ -1,14 +1,14 @@
-USE ProyectoFacturacion;
+USE PROYECTOFACTURACION;
 GO
 
-CREATE TABLE dbo.tipo_operacion (
-    tipo_operacion_id INT IDENTITY (1, 1) NOT NULL,
-    descripcion VARCHAR(20) NOT NULL,
+CREATE TABLE DBO.TIPO_OPERACION (
+    TIPO_OPERACION_ID INT IDENTITY (1, 1) NOT NULL,
+    DESCRIPCION VARCHAR(20) NOT NULL,
 
-    CONSTRAINT pk_tipo_operacion
-    PRIMARY KEY (tipo_operacion_id),
+    CONSTRAINT PK_TIPO_OPERACION
+    PRIMARY KEY (TIPO_OPERACION_ID),
 
-    CONSTRAINT uq_tipo_operacion_descripcion
-    UNIQUE (descripcion)
+    CONSTRAINT UQ_TIPO_OPERACION_DESCRIPCION
+    UNIQUE (DESCRIPCION)
 );
 GO

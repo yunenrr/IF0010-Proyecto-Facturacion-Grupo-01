@@ -1,6 +1,6 @@
-USE ProyectoFacturacion;
+USE PROYECTOFACTURACION;
 GO
 
-CREATE NONCLUSTERED INDEX ix_servicio_unidad_medida
-    ON dbo.servicio (unidad_medida_id);
+CREATE NONCLUSTERED INDEX IX_SERVICIO_UNIDAD_MEDIDA
+    ON DBO.SERVICIO (UNIDAD_MEDIDA_ID);
 GO

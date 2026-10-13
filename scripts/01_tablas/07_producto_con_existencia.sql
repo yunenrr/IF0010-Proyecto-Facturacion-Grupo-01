@@ -1,15 +1,15 @@
-USE ProyectoFacturacion;
+USE PROYECTOFACTURACION;
 GO
 
-CREATE TABLE dbo.producto_con_existencia (
-    producto_con_existencia_id INT NOT NULL,
-    stock_actual INT NOT NULL,
+CREATE TABLE DBO.PRODUCTO_CON_EXISTENCIA (
+    PRODUCTO_CON_EXISTENCIA_ID INT NOT NULL,
+    STOCK_ACTUAL INT NOT NULL,
 
-    CONSTRAINT pk_producto_con_existencia
-    PRIMARY KEY (producto_con_existencia_id),
+    CONSTRAINT PK_PRODUCTO_CON_EXISTENCIA
+    PRIMARY KEY (PRODUCTO_CON_EXISTENCIA_ID),
 
-    CONSTRAINT fk_productoconexistencia_item_facturable
-    FOREIGN KEY (producto_con_existencia_id)
-    REFERENCES dbo.item_facturable (item_facturable_id)
+    CONSTRAINT FK_PRODUCTOCONEXISTENCIA_ITEM_FACTURABLE
+    FOREIGN KEY (PRODUCTO_CON_EXISTENCIA_ID)
+    REFERENCES DBO.ITEM_FACTURABLE (ITEM_FACTURABLE_ID)
 );
 GO

@@ -1,14 +1,14 @@
-USE ProyectoFacturacion;
+USE PROYECTOFACTURACION;
 GO
 
-CREATE TABLE dbo.unidad_medida (
-    unidad_medida_id INT IDENTITY (1, 1) NOT NULL,
-    descripcion VARCHAR(50) NOT NULL,
+CREATE TABLE DBO.UNIDAD_MEDIDA (
+    UNIDAD_MEDIDA_ID INT IDENTITY (1, 1) NOT NULL,
+    DESCRIPCION VARCHAR(50) NOT NULL,
 
-    CONSTRAINT pk_unidad_medida
-    PRIMARY KEY (unidad_medida_id),
+    CONSTRAINT PK_UNIDAD_MEDIDA
+    PRIMARY KEY (UNIDAD_MEDIDA_ID),
 
-    CONSTRAINT uq_unidad_medida_descripcion
-    UNIQUE (descripcion)
+    CONSTRAINT UQ_UNIDAD_MEDIDA_DESCRIPCION
+    UNIQUE (DESCRIPCION)
 );
 GO

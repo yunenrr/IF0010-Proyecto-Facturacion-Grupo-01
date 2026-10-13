@@ -1,17 +1,17 @@
-USE ProyectoFacturacion;
+USE PROYECTOFACTURACION;
 GO
 
 -- Catalogo de las entidades cuyos cambios se auditan (FACTURA, FACTURA_DETALLE,
 -- CLIENTE, ITEM_FACTURABLE). Evita repetir el nombre de la entidad como texto
 -- en cada fila de auditoria.
-CREATE TABLE dbo.entidad_auditada (
-    entidad_auditada_id INT IDENTITY (1, 1) NOT NULL,
-    nombre VARCHAR(30) NOT NULL,
+CREATE TABLE DBO.ENTIDAD_AUDITADA (
+    ENTIDAD_AUDITADA_ID INT IDENTITY (1, 1) NOT NULL,
+    NOMBRE VARCHAR(30) NOT NULL,
 
-    CONSTRAINT pk_entidad_auditada
-    PRIMARY KEY (entidad_auditada_id),
+    CONSTRAINT PK_ENTIDAD_AUDITADA
+    PRIMARY KEY (ENTIDAD_AUDITADA_ID),
 
-    CONSTRAINT uq_entidad_auditada_nombre
-    UNIQUE (nombre)
+    CONSTRAINT UQ_ENTIDAD_AUDITADA_NOMBRE
+    UNIQUE (NOMBRE)
 );
 GO

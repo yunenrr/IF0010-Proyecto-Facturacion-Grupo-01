@@ -1,14 +1,15 @@
-﻿USE ProyectoFacturacion;
+USE PROYECTOFACTURACION;
 GO
 
-DROP PROCEDURE IF EXISTS dbo.usp_cargar_catalogos;
+DROP PROCEDURE IF EXISTS DBO.USP_CARGAR_CATALOGOS;
 GO
 
 -- Carga idempotente de los catalogos del sistema: tipos de documento, monedas,
--- estados de factura, unidades de medida, tipos de operacion y entidades auditadas.
+-- estados de factura, unidades de medida, tipos de operacion y entidades
+-- auditadas.
 -- Las ubicaciones (provincia / canton / distrito) las carga
 -- usp_cargar_ubicaciones.
-CREATE PROCEDURE dbo.usp_cargar_catalogos
+CREATE PROCEDURE DBO.USP_CARGAR_CATALOGOS
     @codigo_error INT OUTPUT,
     @mensaje_error VARCHAR(250) OUTPUT
 AS
@@ -23,86 +24,107 @@ BEGIN
         BEGIN TRANSACTION;
 
         -- Tipos de documento
-        INSERT INTO dbo.tipodocumento (codigo, descripcion)
-        SELECT v.codigo, v.descripcion
-        FROM (VALUES
+        INSERT INTO DBO.TIPODOCUMENTO (CODIGO, DESCRIPCION)
+        SELECT
+            V.CODIGO,
+            V.DESCRIPCION
+        FROM (
+            VALUES
             ('FAC', 'Factura'),
             ('TIQ', 'Tiquete')
-        ) AS v (codigo, descripcion)
+        ) AS V(CODIGO, DESCRIPCION)
         WHERE NOT EXISTS (
-            SELECT 1 FROM dbo.tipodocumento AS t WHERE t.codigo = v.codigo
+            SELECT 1 FROM DBO.TIPODOCUMENTO AS T
+            WHERE T.CODIGO = V.CODIGO
         );
 
         -- Monedas
-        INSERT INTO dbo.moneda (codigo, simbolo, descripcion)
-        SELECT v.codigo, v.simbolo, v.descripcion
-        FROM (VALUES
+        INSERT INTO DBO.MONEDA (CODIGO, SIMBOLO, DESCRIPCION)
+        SELECT
+            V.CODIGO,
+            V.SIMBOLO,
+            V.DESCRIPCION
+        FROM (
+            VALUES
             ('CRC', '¢', 'Colon costarricense'),
             ('USD', '$', 'Dolar estadounidense')
-        ) AS v (codigo, simbolo, descripcion)
+        ) AS V(CODIGO, SIMBOLO, DESCRIPCION)
         WHERE NOT EXISTS (
-            SELECT 1 FROM dbo.moneda AS m WHERE m.codigo = v.codigo
+            SELECT 1 FROM DBO.MONEDA AS M
+            WHERE M.CODIGO = V.CODIGO
         );
 
         -- Estados de factura
-        INSERT INTO dbo.estadofactura (codigo, descripcion)
-        SELECT v.codigo, v.descripcion
-        FROM (VALUES
+        INSERT INTO DBO.ESTADOFACTURA (CODIGO, DESCRIPCION)
+        SELECT
+            V.CODIGO,
+            V.DESCRIPCION
+        FROM (
+            VALUES
             ('BORRADOR', 'Factura en preparacion, aun no emitida'),
             ('EMITIDA', 'Factura emitida al cliente'),
             ('PAGADA', 'Factura cancelada por el cliente mediante pago'),
             ('CANCELADA', 'Factura anulada')
-        ) AS v (codigo, descripcion)
+        ) AS V(CODIGO, DESCRIPCION)
         WHERE NOT EXISTS (
-            SELECT 1 FROM dbo.estadofactura AS e WHERE e.codigo = v.codigo
+            SELECT 1 FROM DBO.ESTADOFACTURA AS E
+            WHERE E.CODIGO = V.CODIGO
         );
 
         -- Unidades de medida
-        INSERT INTO dbo.unidad_medida (descripcion)
-        SELECT v.descripcion
-        FROM (VALUES
+        INSERT INTO DBO.UNIDAD_MEDIDA (DESCRIPCION)
+        SELECT V.DESCRIPCION
+        FROM (
+            VALUES
             ('Unidad'),
             ('Kilogramo'),
             ('Litro'),
             ('Hora'),
             ('Servicio')
-        ) AS v (descripcion)
+        ) AS V(DESCRIPCION)
         WHERE NOT EXISTS (
-            SELECT 1 FROM dbo.unidad_medida AS u WHERE u.descripcion = v.descripcion
+            SELECT 1
+            FROM DBO.UNIDAD_MEDIDA AS U
+            WHERE U.DESCRIPCION = V.DESCRIPCION
         );
 
         -- Tipos de operacion de auditoria
-        INSERT INTO dbo.tipo_operacion (descripcion)
-        SELECT v.descripcion
-        FROM (VALUES
+        INSERT INTO DBO.TIPO_OPERACION (DESCRIPCION)
+        SELECT V.DESCRIPCION
+        FROM (
+            VALUES
             ('INSERT'),
             ('UPDATE'),
             ('DELETE')
-        ) AS v (descripcion)
+        ) AS V(DESCRIPCION)
         WHERE NOT EXISTS (
-            SELECT 1 FROM dbo.tipo_operacion AS o WHERE o.descripcion = v.descripcion
+            SELECT 1
+            FROM DBO.TIPO_OPERACION AS O
+            WHERE O.DESCRIPCION = V.DESCRIPCION
         );
 
         -- Entidades que se auditan
-        INSERT INTO dbo.entidad_auditada (nombre)
-        SELECT v.nombre
-        FROM (VALUES
+        INSERT INTO DBO.ENTIDAD_AUDITADA (NOMBRE)
+        SELECT V.NOMBRE
+        FROM (
+            VALUES
             ('FACTURA'),
             ('FACTURA_DETALLE'),
             ('CLIENTE'),
             ('ITEM_FACTURABLE')
-        ) AS v (nombre)
+        ) AS V(NOMBRE)
         WHERE NOT EXISTS (
-            SELECT 1 FROM dbo.entidad_auditada AS e WHERE e.nombre = v.nombre
+            SELECT 1 FROM DBO.ENTIDAD_AUDITADA AS E
+            WHERE E.NOMBRE = V.NOMBRE
         );
 
         COMMIT TRANSACTION;
     END TRY
     BEGIN CATCH
         IF @@TRANCOUNT > 0
-        BEGIN
-            ROLLBACK TRANSACTION;
-        END
+            BEGIN
+                ROLLBACK TRANSACTION;
+            END
 
         SET @codigo_error = ERROR_NUMBER();
         SET @mensaje_error = LEFT(ERROR_MESSAGE(), 250);

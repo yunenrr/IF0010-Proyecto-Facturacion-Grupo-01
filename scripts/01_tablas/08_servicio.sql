@@ -1,19 +1,19 @@
-USE ProyectoFacturacion;
+USE PROYECTOFACTURACION;
 GO
 
-CREATE TABLE dbo.servicio (
-    servicio_id INT NOT NULL,
-    unidad_medida_id INT NOT NULL,
+CREATE TABLE DBO.SERVICIO (
+    SERVICIO_ID INT NOT NULL,
+    UNIDAD_MEDIDA_ID INT NOT NULL,
 
-    CONSTRAINT pk_servicio
-    PRIMARY KEY (servicio_id),
+    CONSTRAINT PK_SERVICIO
+    PRIMARY KEY (SERVICIO_ID),
 
-    CONSTRAINT fk_servicio_item_facturable
-    FOREIGN KEY (servicio_id)
-    REFERENCES dbo.item_facturable (item_facturable_id),
+    CONSTRAINT FK_SERVICIO_ITEM_FACTURABLE
+    FOREIGN KEY (SERVICIO_ID)
+    REFERENCES DBO.ITEM_FACTURABLE (ITEM_FACTURABLE_ID),
 
-    CONSTRAINT fk_servicio_unidad_medida
-    FOREIGN KEY (unidad_medida_id)
-    REFERENCES dbo.unidad_medida (unidad_medida_id)
+    CONSTRAINT FK_SERVICIO_UNIDAD_MEDIDA
+    FOREIGN KEY (UNIDAD_MEDIDA_ID)
+    REFERENCES DBO.UNIDAD_MEDIDA (UNIDAD_MEDIDA_ID)
 );
 GO

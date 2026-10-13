@@ -1,7 +1,7 @@
-USE ProyectoFacturacion;
+USE PROYECTOFACTURACION;
 GO
 
-DROP PROCEDURE IF EXISTS dbo.usp_generar_facturas;
+DROP PROCEDURE IF EXISTS DBO.USP_GENERAR_FACTURAS;
 GO
 
 -- Carga masiva de facturas hasta alcanzar @cantidad_objetivo facturas en total,
@@ -14,16 +14,18 @@ GO
 --   * Cada factura tiene entre 3 y 5 lineas de detalle (3 + consecutivo % 3).
 --   * numero_factura = AAAAMMDDHHMMSS-CodigoTipoDocumento, unico: cada factura
 --     usa un segundo distinto dentro del ultimo ano (paso 7919, coprimo con el
---     numero de segundos de 365 dias) y, ademas, se descartan las que ya existan.
+--     numero de segundos de 365 dias) y, ademas, se descartan las que ya
+-- existan.
 --   * Estados (40 % EMITIDA, 40 % PAGADA, 10 % CANCELADA, 10 % BORRADOR),
 --     monedas (80 % CRC, 20 % USD) y tipos de documento (2/3 FAC, 1/3 TIQ).
 --   * Precio de linea = precio de lista (colones) / tipo_cambio.
 --   * Linea: subtotal = cantidad * precio; total = subtotal - descuento +
 --     impuesto, con impuesto = (subtotal - descuento) * % impuesto / 100.
 --   * Los totales del encabezado son la suma exacta de sus lineas.
---   * Se descuenta stock de las facturas no canceladas (productos activos con stock suficiente: >= 50 000 o servicios).
+--   * Se descuenta stock de las facturas no canceladas (productos activos con
+-- stock suficiente: >= 50 000 o servicios).
 -- Los indices secundarios se crean DESPUES de la carga (scripts/04_indices).
-CREATE PROCEDURE dbo.usp_generar_facturas
+CREATE PROCEDURE DBO.USP_GENERAR_FACTURAS
     @cantidad_objetivo INT,
     @tamano_lote INT,
     @codigo_error INT OUTPUT,
@@ -36,7 +38,7 @@ BEGIN
     SET @codigo_error = 0;
     SET @mensaje_error = 'OK';
 
-    DECLARE @ahora DATETIME2 (0) = CAST(SYSDATETIME() AS DATETIME2 (0));
+    DECLARE @ahora DATETIME2(0) = CAST(SYSDATETIME() AS DATETIME2(0));
     DECLARE @id_fac INT;
     DECLARE @id_tiq INT;
     DECLARE @id_crc INT;
@@ -57,65 +59,90 @@ BEGIN
         BEGIN TRANSACTION;
 
         IF @cantidad_objetivo IS NULL OR @cantidad_objetivo <= 0
-        BEGIN
-            THROW 50031, 'La cantidad objetivo debe ser mayor que cero.', 1;
-        END
+            BEGIN
+                THROW 50031, 'La cantidad objetivo debe ser mayor que cero.', 1;
+            END
 
         IF @tamano_lote IS NULL OR @tamano_lote < 1 OR @tamano_lote > 100000
-        BEGIN
-            THROW 50032, 'El tamano de lote debe estar entre 1 y 100000.', 1;
-        END
+            BEGIN
+                THROW 50032,
+                'El tamano de lote debe estar entre 1 y 100000.',
+                1;
+            END
 
-        SELECT @id_fac = tipo_documento_id FROM dbo.tipodocumento WHERE codigo = 'FAC';
-        SELECT @id_tiq = tipo_documento_id FROM dbo.tipodocumento WHERE codigo = 'TIQ';
-        SELECT @id_crc = moneda_id FROM dbo.moneda WHERE codigo = 'CRC';
-        SELECT @id_usd = moneda_id FROM dbo.moneda WHERE codigo = 'USD';
-        SELECT @id_borrador = estado_factura_id FROM dbo.estadofactura WHERE codigo = 'BORRADOR';
-        SELECT @id_emitida = estado_factura_id FROM dbo.estadofactura WHERE codigo = 'EMITIDA';
-        SELECT @id_pagada = estado_factura_id FROM dbo.estadofactura WHERE codigo = 'PAGADA';
-        SELECT @id_cancelada = estado_factura_id FROM dbo.estadofactura WHERE codigo = 'CANCELADA';
+        SELECT @id_fac = TIPO_DOCUMENTO_ID
+        FROM DBO.TIPODOCUMENTO
+        WHERE CODIGO = 'FAC';
+        SELECT @id_tiq = TIPO_DOCUMENTO_ID
+        FROM DBO.TIPODOCUMENTO
+        WHERE CODIGO = 'TIQ';
+        SELECT @id_crc = MONEDA_ID FROM DBO.MONEDA
+        WHERE CODIGO = 'CRC';
+        SELECT @id_usd = MONEDA_ID FROM DBO.MONEDA
+        WHERE CODIGO = 'USD';
+        SELECT @id_borrador = ESTADO_FACTURA_ID
+        FROM DBO.ESTADOFACTURA
+        WHERE CODIGO = 'BORRADOR';
+        SELECT @id_emitida = ESTADO_FACTURA_ID
+        FROM DBO.ESTADOFACTURA
+        WHERE CODIGO = 'EMITIDA';
+        SELECT @id_pagada = ESTADO_FACTURA_ID
+        FROM DBO.ESTADOFACTURA
+        WHERE CODIGO = 'PAGADA';
+        SELECT @id_cancelada = ESTADO_FACTURA_ID
+        FROM DBO.ESTADOFACTURA
+        WHERE CODIGO = 'CANCELADA';
 
-        IF @id_fac IS NULL OR @id_tiq IS NULL OR @id_crc IS NULL OR @id_usd IS NULL
+        IF
+            @id_fac IS NULL
+            OR @id_tiq IS NULL
+            OR @id_crc IS NULL
+            OR @id_usd IS NULL
             OR @id_borrador IS NULL OR @id_emitida IS NULL
             OR @id_pagada IS NULL OR @id_cancelada IS NULL
-        BEGIN
-            THROW 50033, 'Catalogos incompletos. Ejecute usp_cargar_catalogos primero.', 1;
-        END
+            BEGIN
+                THROW 50033,
+                'Catalogos incompletos. Ejecute usp_cargar_catalogos primero.',
+                1;
+            END
 
         -- Datos de referencia numerados para repartirlos entre las facturas
         SELECT
-            CAST(ROW_NUMBER() OVER (ORDER BY empresa_id) AS INT) AS rn,
-            empresa_id
+            CAST(ROW_NUMBER() OVER (ORDER BY EMPRESA_ID) AS INT) AS RN,
+            EMPRESA_ID
         INTO #empresas
-        FROM dbo.empresaemisora
-        WHERE activa = 1;
+        FROM DBO.EMPRESAEMISORA
+        WHERE ACTIVA = 1;
 
         SELECT
-            CAST(ROW_NUMBER() OVER (ORDER BY cliente_id) AS INT) AS rn,
-            cliente_id
+            CAST(ROW_NUMBER() OVER (ORDER BY CLIENTE_ID) AS INT) AS RN,
+            CLIENTE_ID
         INTO #clientes
-        FROM dbo.cliente;
+        FROM DBO.CLIENTE;
 
         SELECT
-            CAST(ROW_NUMBER() OVER (ORDER BY it.item_facturable_id) AS INT) AS rn,
-            it.item_facturable_id,
-            it.descripcion,
-            it.precio_unitario,
-            it.porcentaje_impuesto
+            CAST(ROW_NUMBER() OVER (ORDER BY IT.ITEM_FACTURABLE_ID) AS INT)
+                AS RN,
+            IT.ITEM_FACTURABLE_ID,
+            IT.DESCRIPCION,
+            IT.PRECIO_UNITARIO,
+            IT.PORCENTAJE_IMPUESTO
         INTO #items
-        FROM dbo.item_facturable AS it
-        WHERE it.activo = 1
+        FROM DBO.ITEM_FACTURABLE AS IT
+        WHERE
+            IT.ACTIVO = 1
             AND (
                 NOT EXISTS (
                     SELECT 1
-                    FROM dbo.producto_con_existencia AS pe
-                    WHERE pe.producto_con_existencia_id = it.item_facturable_id
+                    FROM DBO.PRODUCTO_CON_EXISTENCIA AS PE
+                    WHERE PE.PRODUCTO_CON_EXISTENCIA_ID = IT.ITEM_FACTURABLE_ID
                 )
                 OR EXISTS (
                     SELECT 1
-                    FROM dbo.producto_con_existencia AS pe
-                    WHERE pe.producto_con_existencia_id = it.item_facturable_id
-                        AND pe.stock_actual >= 50000
+                    FROM DBO.PRODUCTO_CON_EXISTENCIA AS PE
+                    WHERE
+                        PE.PRODUCTO_CON_EXISTENCIA_ID = IT.ITEM_FACTURABLE_ID
+                        AND PE.STOCK_ACTUAL >= 50000
                 )
             );
 
@@ -124,196 +151,275 @@ BEGIN
         SET @n_items = (SELECT COUNT(*) FROM #items);
 
         IF @n_empresas = 0 OR @n_clientes = 0 OR @n_items < 5
-        BEGIN
-            THROW 50034, 'Faltan empresas activas, clientes o al menos 5 productos activos. Ejecute las cargas previas.', 1;
-        END
+            BEGIN
+                THROW 50034,
+                'Faltan empresas activas, clientes o al menos 5 productos activos. Ejecute las cargas previas.', -- noqa: LT05
+                1;
+            END
 
         COMMIT TRANSACTION;
 
-        SET @existentes = (SELECT COUNT_BIG(*) FROM dbo.factura);
-        SET @base = ISNULL((SELECT MAX(factura_id) FROM dbo.factura), 0);
+        SET @existentes = (SELECT COUNT_BIG(*) FROM DBO.FACTURA);
+        SET @base = ISNULL((SELECT MAX(FACTURA_ID) FROM DBO.FACTURA), 0);
 
         WHILE @existentes < @cantidad_objetivo
-        BEGIN
-            IF @cantidad_objetivo - @existentes < @tamano_lote
             BEGIN
-                SET @lote_actual = CAST(@cantidad_objetivo - @existentes AS INT);
-            END
-            ELSE
-            BEGIN
-                SET @lote_actual = @tamano_lote;
-            END
+                IF @cantidad_objetivo - @existentes < @tamano_lote
+                    BEGIN
+                        SET
+                            @lote_actual
+                            = CAST(@cantidad_objetivo - @existentes AS INT);
+                    END
+                ELSE
+                    BEGIN
+                        SET @lote_actual = @tamano_lote;
+                    END
 
-            BEGIN TRANSACTION;
+                BEGIN TRANSACTION;
 
-            DROP TABLE IF EXISTS #cab;
-            DROP TABLE IF EXISTS #lin;
+                DROP TABLE IF EXISTS #cab;
+                DROP TABLE IF EXISTS #lin;
 
-            -- Encabezados del lote
-            SELECT
-                s.seq,
-                DATEADD(SECOND, -CAST(s.seq * 7919 % 31536000 AS INT) - 1, @ahora) AS fecha_emision,
-                CASE WHEN s.seq % 3 = 0 THEN @id_tiq ELSE @id_fac END AS tipo_documento_id,
-                CASE WHEN s.seq % 3 = 0 THEN 'TIQ' ELSE 'FAC' END AS codigo_tipo,
-                CASE WHEN s.seq % 5 = 0 THEN @id_usd ELSE @id_crc END AS moneda_id,
-                CASE
-                    WHEN s.seq % 5 = 0
-                        THEN CAST(500 + (s.seq % 4001) / 100.0 AS DECIMAL(18, 4))
-                    ELSE CAST(1 AS DECIMAL(18, 4))
-                END AS tipo_cambio,
-                CASE
-                    WHEN s.seq / 5 % 20 < 8 THEN @id_emitida
-                    WHEN s.seq / 5 % 20 < 16 THEN @id_pagada
-                    WHEN s.seq / 5 % 20 < 18 THEN @id_cancelada
-                    ELSE @id_borrador
-                END AS estado_factura_id,
-                e.empresa_id,
-                cl.cliente_id,
-                CAST('' AS VARCHAR(50)) AS numero_factura
-            INTO #cab
-            FROM (
-                SELECT TOP (@lote_actual)
-                    @base + @desplazamiento + ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS seq
-                FROM sys.all_objects AS a
-                CROSS JOIN sys.all_objects AS b
-                WHERE a.object_id IS NOT NULL
-                    AND b.object_id IS NOT NULL
-            ) AS s
-            INNER JOIN #empresas AS e
-                ON e.rn = (s.seq * 31) % @n_empresas + 1
-            INNER JOIN #clientes AS cl
-                ON cl.rn = (s.seq * 104729) % @n_clientes + 1;
-
-            UPDATE #cab
-            SET numero_factura =
-                CONVERT(CHAR(8), fecha_emision, 112)
-                + REPLACE(CONVERT(CHAR(8), fecha_emision, 108), ':', '')
-                + '-' + codigo_tipo;
-
-            -- Descarta las facturas cuyo identificador ya exista
-            DELETE c
-            FROM #cab AS c
-            WHERE EXISTS (
-                SELECT 1 FROM dbo.factura AS f WHERE f.numero_factura = c.numero_factura
-            );
-
-            CREATE UNIQUE CLUSTERED INDEX ix_tmp_cab ON #cab (seq);
-
-            -- Lineas de detalle (3 a 5 por factura)
-            SELECT
-                c.seq,
-                l.linea AS numero_linea,
-                i.item_facturable_id,
-                i.descripcion,
-                CAST(1 + (c.seq * l.linea) % 10 AS DECIMAL(18, 2)) AS cantidad,
-                CAST(ROUND(i.precio_unitario / c.tipo_cambio, 2) AS DECIMAL(18, 2)) AS precio_unitario,
-                i.porcentaje_impuesto,
-                CAST(0 AS DECIMAL(18, 2)) AS monto_subtotal,
-                CAST(0 AS DECIMAL(18, 2)) AS monto_descuento,
-                CAST(0 AS DECIMAL(18, 2)) AS monto_impuesto,
-                CAST(0 AS DECIMAL(18, 2)) AS monto_total
-            INTO #lin
-            FROM #cab AS c
-            INNER JOIN (VALUES (1), (2), (3), (4), (5)) AS l (linea)
-                ON l.linea <= 3 + c.seq % 3
-            INNER JOIN #items AS i
-                ON i.rn = (c.seq * 13 + l.linea * 37) % @n_items + 1;
-
-            UPDATE #lin
-            SET monto_subtotal = CAST(ROUND(cantidad * precio_unitario, 2) AS DECIMAL(18, 2));
-
-            UPDATE #lin
-            SET monto_descuento = CASE
-                WHEN (seq + numero_linea) % 5 = 0
-                    THEN CAST(ROUND(monto_subtotal * 0.10, 2) AS DECIMAL(18, 2))
-                ELSE CAST(0 AS DECIMAL(18, 2))
-            END;
-
-            UPDATE #lin
-            SET monto_impuesto = CAST(
-                ROUND((monto_subtotal - monto_descuento) * porcentaje_impuesto / 100.0, 2)
-                AS DECIMAL(18, 2)
-            );
-
-            UPDATE #lin
-            SET monto_total = monto_subtotal - monto_descuento + monto_impuesto;
-
-            CREATE UNIQUE CLUSTERED INDEX ix_tmp_lin ON #lin (seq, numero_linea);
-
-            -- Encabezados: los totales son la suma de sus lineas
-            INSERT INTO dbo.factura (
-                empresa_id, cliente_id, tipo_documento_id, moneda_id,
-                estado_factura_id, numero_factura, fecha_emision, tipo_cambio,
-                monto_subtotal, monto_descuento, monto_impuesto, monto_total,
-                observaciones, fecha_creacion, fecha_modificacion
-            )
-            SELECT
-                c.empresa_id, c.cliente_id, c.tipo_documento_id, c.moneda_id,
-                c.estado_factura_id, c.numero_factura, c.fecha_emision, c.tipo_cambio,
-                t.subtotal, t.descuento, t.impuesto, t.total,
-                'Carga masiva consecutivo ' + CAST(c.seq AS VARCHAR(20)),
-                c.fecha_emision, c.fecha_emision
-            FROM #cab AS c
-            INNER JOIN (
+                -- Encabezados del lote
                 SELECT
-                    seq,
-                    SUM(monto_subtotal) AS subtotal,
-                    SUM(monto_descuento) AS descuento,
-                    SUM(monto_impuesto) AS impuesto,
-                    SUM(monto_total) AS total
-                FROM #lin
-                GROUP BY seq
-            ) AS t
-                ON t.seq = c.seq
-            ORDER BY c.seq;
+                    S.SEQ,
+                    E.EMPRESA_ID,
+                    CL.CLIENTE_ID,
+                    CAST('' AS VARCHAR(50)) AS NUMERO_FACTURA,
+                    DATEADD(
+                        SECOND,
+                        -CAST(S.SEQ * 7919 % 31536000 AS INT) - 1,
+                        @ahora
+                    ) AS FECHA_EMISION,
+                    CASE WHEN S.SEQ % 3 = 0 THEN @id_tiq ELSE @id_fac END
+                        AS TIPO_DOCUMENTO_ID,
+                    CASE WHEN S.SEQ % 3 = 0 THEN 'TIQ' ELSE 'FAC' END
+                        AS CODIGO_TIPO,
+                    CASE WHEN S.SEQ % 5 = 0 THEN @id_usd ELSE @id_crc END
+                        AS MONEDA_ID,
+                    CASE
+                        WHEN S.SEQ % 5 = 0
+                            THEN
+                                CAST(
+                                    500
+                                    + (S.SEQ % 4001) / 100.0 AS DECIMAL(18, 4)
+                                )
+                        ELSE CAST(1 AS DECIMAL(18, 4))
+                    END AS TIPO_CAMBIO,
+                    CASE
+                        WHEN S.SEQ / 5 % 20 < 8 THEN @id_emitida
+                        WHEN S.SEQ / 5 % 20 < 16 THEN @id_pagada
+                        WHEN S.SEQ / 5 % 20 < 18 THEN @id_cancelada
+                        ELSE @id_borrador
+                    END AS ESTADO_FACTURA_ID
+                INTO #cab
+                FROM (
+                    SELECT TOP (@lote_actual)
+                        @base
+                        + @desplazamiento
+                        + ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS SEQ
+                    FROM SYS.ALL_OBJECTS AS A
+                    CROSS JOIN SYS.ALL_OBJECTS AS B
+                    WHERE
+                        A.OBJECT_ID IS NOT NULL
+                        AND B.OBJECT_ID IS NOT NULL
+                ) AS S
+                INNER JOIN #empresas AS E
+                    ON E.RN = (S.SEQ * 31) % @n_empresas + 1
+                INNER JOIN #clientes AS CL
+                    ON CL.RN = (S.SEQ * 104729) % @n_clientes + 1;
 
-            -- Detalles
-            INSERT INTO dbo.factura_detalle (
-                factura_id, item_facturable_id, numero_linea, descripcion,
-                cantidad, precio_unitario, porcentaje_impuesto,
-                monto_subtotal, monto_descuento, monto_impuesto, monto_total
-            )
-            SELECT
-                f.factura_id, l.item_facturable_id, l.numero_linea, l.descripcion,
-                l.cantidad, l.precio_unitario, l.porcentaje_impuesto,
-                l.monto_subtotal, l.monto_descuento, l.monto_impuesto, l.monto_total
-            FROM #lin AS l
-            INNER JOIN #cab AS c
-                ON c.seq = l.seq
-            INNER JOIN dbo.factura AS f
-                ON f.numero_factura = c.numero_factura
-            ORDER BY f.factura_id, l.numero_linea;
+                UPDATE #cab
+                SET
+                    NUMERO_FACTURA
+                    = CONVERT(CHAR(8), FECHA_EMISION, 112)
+                    + REPLACE(CONVERT(CHAR(8), FECHA_EMISION, 108), ':', '')
+                    + '-' + CODIGO_TIPO;
 
-            -- Existencias: las facturas no canceladas descuentan stock
-            UPDATE p
-            SET p.stock_actual = p.stock_actual - CAST(s.unidades AS INT)
-            FROM dbo.producto_con_existencia AS p
-            INNER JOIN (
-                SELECT l.item_facturable_id, SUM(l.cantidad) AS unidades
-                FROM #lin AS l
-                INNER JOIN #cab AS c
-                    ON c.seq = l.seq
-                WHERE c.estado_factura_id <> @id_cancelada
-                GROUP BY l.item_facturable_id
-            ) AS s
-                ON s.item_facturable_id = p.producto_con_existencia_id;
+                -- Descarta las facturas cuyo identificador ya exista
+                DELETE C
+                FROM #cab AS C
+                WHERE EXISTS (
+                    SELECT 1
+                    FROM DBO.FACTURA AS F
+                    WHERE F.NUMERO_FACTURA = C.NUMERO_FACTURA
+                );
 
-            IF EXISTS (SELECT 1 FROM dbo.producto_con_existencia WHERE stock_actual < 0)
-            BEGIN
-                THROW 50035, 'El stock de un producto quedaria negativo. Se revierte el lote.', 1;
+                CREATE UNIQUE CLUSTERED INDEX IX_TMP_CAB ON #cab (SEQ);
+
+                -- Lineas de detalle (3 a 5 por factura)
+                SELECT
+                    C.SEQ,
+                    L.LINEA AS NUMERO_LINEA,
+                    I.ITEM_FACTURABLE_ID,
+                    I.DESCRIPCION,
+                    CAST(1 + (C.SEQ * L.LINEA) % 10 AS DECIMAL(18, 2))
+                        AS CANTIDAD,
+                    CAST(
+                        ROUND(I.PRECIO_UNITARIO / C.TIPO_CAMBIO, 2) AS DECIMAL(
+                            18, 2
+                        )
+                    ) AS PRECIO_UNITARIO,
+                    I.PORCENTAJE_IMPUESTO,
+                    CAST(0 AS DECIMAL(18, 2)) AS MONTO_SUBTOTAL,
+                    CAST(0 AS DECIMAL(18, 2)) AS MONTO_DESCUENTO,
+                    CAST(0 AS DECIMAL(18, 2)) AS MONTO_IMPUESTO,
+                    CAST(0 AS DECIMAL(18, 2)) AS MONTO_TOTAL
+                INTO #lin
+                FROM #cab AS C
+                INNER JOIN (VALUES (1), (2), (3), (4), (5)) AS L(LINEA)
+                    ON L.LINEA <= 3 + C.SEQ % 3
+                INNER JOIN #items AS I
+                    ON I.RN = (C.SEQ * 13 + L.LINEA * 37) % @n_items + 1;
+
+                UPDATE #lin
+                SET
+                    MONTO_SUBTOTAL
+                    = CAST(
+                        ROUND(CANTIDAD * PRECIO_UNITARIO, 2)
+                        AS DECIMAL(18, 2)
+                    );
+
+                UPDATE #lin
+                SET MONTO_DESCUENTO = CASE
+                    WHEN (SEQ + NUMERO_LINEA) % 5 = 0
+                        THEN
+                            CAST(
+                                ROUND(MONTO_SUBTOTAL * 0.10, 2) AS DECIMAL(
+                                    18, 2
+                                )
+                            )
+                    ELSE CAST(0 AS DECIMAL(18, 2))
+                END;
+
+                UPDATE #lin
+                SET MONTO_IMPUESTO = CAST(
+                    ROUND(
+                        (MONTO_SUBTOTAL - MONTO_DESCUENTO)
+                        * PORCENTAJE_IMPUESTO
+                        / 100.0,
+                        2
+                    )
+                    AS DECIMAL(18, 2)
+                );
+
+                UPDATE #lin
+                SET
+                    MONTO_TOTAL
+                    = MONTO_SUBTOTAL - MONTO_DESCUENTO + MONTO_IMPUESTO;
+
+                CREATE UNIQUE CLUSTERED INDEX IX_TMP_LIN
+                    ON #lin (SEQ, NUMERO_LINEA);
+
+                -- Encabezados: los totales son la suma de sus lineas
+                WITH T AS (
+                    SELECT
+                        SEQ,
+                        SUM(MONTO_SUBTOTAL) AS SUBTOTAL,
+                        SUM(MONTO_DESCUENTO) AS DESCUENTO,
+                        SUM(MONTO_IMPUESTO) AS IMPUESTO,
+                        SUM(MONTO_TOTAL) AS TOTAL
+                    FROM #lin
+                    GROUP BY SEQ
+                )
+
+                INSERT INTO DBO.FACTURA (
+                    EMPRESA_ID, CLIENTE_ID, TIPO_DOCUMENTO_ID, MONEDA_ID,
+                    ESTADO_FACTURA_ID,
+                    NUMERO_FACTURA,
+                    FECHA_EMISION,
+                    TIPO_CAMBIO,
+                    MONTO_SUBTOTAL,
+                    MONTO_DESCUENTO,
+                    MONTO_IMPUESTO,
+                    MONTO_TOTAL,
+                    OBSERVACIONES, FECHA_CREACION, FECHA_MODIFICACION
+                )
+                SELECT
+                    C.EMPRESA_ID,
+                    C.CLIENTE_ID,
+                    C.TIPO_DOCUMENTO_ID,
+                    C.MONEDA_ID,
+                    C.ESTADO_FACTURA_ID,
+                    C.NUMERO_FACTURA,
+                    C.FECHA_EMISION,
+                    C.TIPO_CAMBIO,
+                    T.SUBTOTAL,
+                    T.DESCUENTO,
+                    T.IMPUESTO,
+                    T.TOTAL,
+                    'Carga masiva consecutivo '
+                    + CAST(C.SEQ AS VARCHAR(20)) AS OBSERVACIONES,
+                    C.FECHA_EMISION AS FECHA_CREACION,
+                    C.FECHA_EMISION AS FECHA_MODIFICACION
+                FROM #cab AS C
+                INNER JOIN T
+                    ON C.SEQ = T.SEQ
+                ORDER BY C.SEQ;
+
+                -- Detalles
+                INSERT INTO DBO.FACTURA_DETALLE (
+                    FACTURA_ID, ITEM_FACTURABLE_ID, NUMERO_LINEA, DESCRIPCION,
+                    CANTIDAD, PRECIO_UNITARIO, PORCENTAJE_IMPUESTO,
+                    MONTO_SUBTOTAL, MONTO_DESCUENTO, MONTO_IMPUESTO, MONTO_TOTAL
+                )
+                SELECT
+                    F.FACTURA_ID,
+                    L.ITEM_FACTURABLE_ID,
+                    L.NUMERO_LINEA,
+                    L.DESCRIPCION,
+                    L.CANTIDAD,
+                    L.PRECIO_UNITARIO,
+                    L.PORCENTAJE_IMPUESTO,
+                    L.MONTO_SUBTOTAL,
+                    L.MONTO_DESCUENTO,
+                    L.MONTO_IMPUESTO,
+                    L.MONTO_TOTAL
+                FROM #lin AS L
+                INNER JOIN #cab AS C
+                    ON L.SEQ = C.SEQ
+                INNER JOIN DBO.FACTURA AS F
+                    ON C.NUMERO_FACTURA = F.NUMERO_FACTURA
+                ORDER BY F.FACTURA_ID, L.NUMERO_LINEA;
+
+                -- Existencias: las facturas no canceladas descuentan stock
+                UPDATE P
+                SET P.STOCK_ACTUAL = P.STOCK_ACTUAL - CAST(S.UNIDADES AS INT)
+                FROM DBO.PRODUCTO_CON_EXISTENCIA AS P
+                INNER JOIN (
+                    SELECT
+                        L.ITEM_FACTURABLE_ID,
+                        SUM(L.CANTIDAD) AS UNIDADES
+                    FROM #lin AS L
+                    INNER JOIN #cab AS C
+                        ON L.SEQ = C.SEQ
+                    WHERE C.ESTADO_FACTURA_ID <> @id_cancelada
+                    GROUP BY L.ITEM_FACTURABLE_ID
+                ) AS S
+                    ON P.PRODUCTO_CON_EXISTENCIA_ID = S.ITEM_FACTURABLE_ID;
+
+                IF
+                    EXISTS (
+                        SELECT 1 FROM DBO.PRODUCTO_CON_EXISTENCIA
+                        WHERE STOCK_ACTUAL < 0
+                    )
+                    BEGIN
+                        THROW 50035,
+                        'El stock de un producto quedaria negativo. Se revierte el lote.', -- noqa: LT05
+                        1;
+                    END
+
+                COMMIT TRANSACTION;
+
+                SET @desplazamiento = @desplazamiento + @lote_actual;
+                SET @existentes = (SELECT COUNT_BIG(*) FROM DBO.FACTURA);
             END
-
-            COMMIT TRANSACTION;
-
-            SET @desplazamiento = @desplazamiento + @lote_actual;
-            SET @existentes = (SELECT COUNT_BIG(*) FROM dbo.factura);
-        END
     END TRY
     BEGIN CATCH
         IF @@TRANCOUNT > 0
-        BEGIN
-            ROLLBACK TRANSACTION;
-        END
+            BEGIN
+                ROLLBACK TRANSACTION;
+            END
 
         SET @codigo_error = ERROR_NUMBER();
         SET @mensaje_error = LEFT(ERROR_MESSAGE(), 250);

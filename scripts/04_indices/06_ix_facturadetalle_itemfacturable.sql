@@ -1,6 +1,6 @@
-USE ProyectoFacturacion;
+USE PROYECTOFACTURACION;
 GO
 
-CREATE NONCLUSTERED INDEX ix_facturadetalle_itemfacturable
-    ON dbo.factura_detalle (item_facturable_id);
+CREATE NONCLUSTERED INDEX IX_FACTURADETALLE_ITEMFACTURABLE
+    ON DBO.FACTURA_DETALLE (ITEM_FACTURABLE_ID);
 GO

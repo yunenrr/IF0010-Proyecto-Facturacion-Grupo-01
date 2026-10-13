@@ -1,51 +1,51 @@
-USE ProyectoFacturacion;
+USE PROYECTOFACTURACION;
 GO
 
-CREATE TABLE dbo.factura (
-    factura_id BIGINT IDENTITY (1, 1) NOT NULL,
-    empresa_id INT NOT NULL,
-    cliente_id INT NOT NULL,
-    tipo_documento_id INT NOT NULL,
-    moneda_id INT NOT NULL,
-    estado_factura_id INT NOT NULL,
+CREATE TABLE DBO.FACTURA (
+    FACTURA_ID BIGINT IDENTITY (1, 1) NOT NULL,
+    EMPRESA_ID INT NOT NULL,
+    CLIENTE_ID INT NOT NULL,
+    TIPO_DOCUMENTO_ID INT NOT NULL,
+    MONEDA_ID INT NOT NULL,
+    ESTADO_FACTURA_ID INT NOT NULL,
 
-    numero_factura VARCHAR(50) NOT NULL,
-    fecha_emision DATETIME2 NOT NULL,
-    tipo_cambio DECIMAL(18, 4) NOT NULL,
+    NUMERO_FACTURA VARCHAR(50) NOT NULL,
+    FECHA_EMISION DATETIME2 NOT NULL,
+    TIPO_CAMBIO DECIMAL(18, 4) NOT NULL,
 
-    monto_subtotal DECIMAL(18, 2) NOT NULL,
-    monto_descuento DECIMAL(18, 2) NOT NULL,
-    monto_impuesto DECIMAL(18, 2) NOT NULL,
-    monto_total DECIMAL(18, 2) NOT NULL,
+    MONTO_SUBTOTAL DECIMAL(18, 2) NOT NULL,
+    MONTO_DESCUENTO DECIMAL(18, 2) NOT NULL,
+    MONTO_IMPUESTO DECIMAL(18, 2) NOT NULL,
+    MONTO_TOTAL DECIMAL(18, 2) NOT NULL,
 
-    observaciones VARCHAR(500) NOT NULL,
-    fecha_creacion DATETIME2 NOT NULL,
-    fecha_modificacion DATETIME2 NOT NULL,
+    OBSERVACIONES VARCHAR(500) NOT NULL,
+    FECHA_CREACION DATETIME2 NOT NULL,
+    FECHA_MODIFICACION DATETIME2 NOT NULL,
 
-    CONSTRAINT pk_factura
-    PRIMARY KEY (factura_id),
+    CONSTRAINT PK_FACTURA
+    PRIMARY KEY (FACTURA_ID),
 
-    CONSTRAINT uq_factura_numero
-    UNIQUE (numero_factura),
+    CONSTRAINT UQ_FACTURA_NUMERO
+    UNIQUE (NUMERO_FACTURA),
 
-    CONSTRAINT fk_factura_empresaemisora
-    FOREIGN KEY (empresa_id)
-    REFERENCES dbo.empresaemisora (empresa_id),
+    CONSTRAINT FK_FACTURA_EMPRESAEMISORA
+    FOREIGN KEY (EMPRESA_ID)
+    REFERENCES DBO.EMPRESAEMISORA (EMPRESA_ID),
 
-    CONSTRAINT fk_factura_cliente
-    FOREIGN KEY (cliente_id)
-    REFERENCES dbo.cliente (cliente_id),
+    CONSTRAINT FK_FACTURA_CLIENTE
+    FOREIGN KEY (CLIENTE_ID)
+    REFERENCES DBO.CLIENTE (CLIENTE_ID),
 
-    CONSTRAINT fk_factura_tipodocumento
-    FOREIGN KEY (tipo_documento_id)
-    REFERENCES dbo.tipodocumento (tipo_documento_id),
+    CONSTRAINT FK_FACTURA_TIPODOCUMENTO
+    FOREIGN KEY (TIPO_DOCUMENTO_ID)
+    REFERENCES DBO.TIPODOCUMENTO (TIPO_DOCUMENTO_ID),
 
-    CONSTRAINT fk_factura_moneda
-    FOREIGN KEY (moneda_id)
-    REFERENCES dbo.moneda (moneda_id),
+    CONSTRAINT FK_FACTURA_MONEDA
+    FOREIGN KEY (MONEDA_ID)
+    REFERENCES DBO.MONEDA (MONEDA_ID),
 
-    CONSTRAINT fk_factura_estadofactura
-    FOREIGN KEY (estado_factura_id)
-    REFERENCES dbo.estadofactura (estado_factura_id)
+    CONSTRAINT FK_FACTURA_ESTADOFACTURA
+    FOREIGN KEY (ESTADO_FACTURA_ID)
+    REFERENCES DBO.ESTADOFACTURA (ESTADO_FACTURA_ID)
 );
 GO

@@ -1,7 +1,7 @@
-USE ProyectoFacturacion;
+USE PROYECTOFACTURACION;
 GO
 
-CREATE NONCLUSTERED INDEX ix_auditoria_registro
-    ON dbo.auditoria (entidad_auditada_id, registro_id)
-    INCLUDE (fecha_cambio);
+CREATE NONCLUSTERED INDEX IX_AUDITORIA_REGISTRO
+    ON DBO.AUDITORIA (ENTIDAD_AUDITADA_ID, REGISTRO_ID)
+    INCLUDE (FECHA_CAMBIO);
 GO

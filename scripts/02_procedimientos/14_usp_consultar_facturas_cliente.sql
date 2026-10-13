@@ -1,14 +1,14 @@
-USE ProyectoFacturacion;
+USE PROYECTOFACTURACION;
 GO
 
-DROP PROCEDURE IF EXISTS dbo.usp_consultar_facturas_cliente;
+DROP PROCEDURE IF EXISTS DBO.USP_CONSULTAR_FACTURAS_CLIENTE;
 GO
 
 -- Consulta las facturas de un comprador, de la mas reciente a la mas antigua.
 -- El comprador se identifica por @cliente_id (> 0) o por @identificacion.
 -- No modifica datos. Usa ix_factura_cliente para responder en menos de un
 -- segundo.
-CREATE PROCEDURE dbo.usp_consultar_facturas_cliente
+CREATE PROCEDURE DBO.USP_CONSULTAR_FACTURAS_CLIENTE
     @cliente_id INT = 0,
     @identificacion VARCHAR(20) = '',
     @codigo_error INT OUTPUT,
@@ -24,53 +24,53 @@ BEGIN
 
     BEGIN TRY
         IF @cliente_id > 0
-        BEGIN
-            SELECT @id = cliente_id
-            FROM dbo.cliente
-            WHERE cliente_id = @cliente_id;
-        END
+            BEGIN
+                SELECT @id = CLIENTE_ID
+                FROM DBO.CLIENTE
+                WHERE CLIENTE_ID = @cliente_id;
+            END
         ELSE IF LEN(LTRIM(RTRIM(@identificacion))) > 0
-        BEGIN
-            SELECT @id = cliente_id
-            FROM dbo.cliente
-            WHERE identificacion = @identificacion;
-        END
+            BEGIN
+                SELECT @id = CLIENTE_ID
+                FROM DBO.CLIENTE
+                WHERE IDENTIFICACION = @identificacion;
+            END
         ELSE
-        BEGIN
-            THROW 50411, 'Indique cliente_id o identificacion.', 1;
-        END
+            BEGIN
+                THROW 50411, 'Indique cliente_id o identificacion.', 1;
+            END
 
         IF @id IS NULL
-        BEGIN
-            THROW 50412, 'El cliente indicado no existe.', 1;
-        END
+            BEGIN
+                THROW 50412, 'El cliente indicado no existe.', 1;
+            END
 
         SELECT
-            f.factura_id,
-            f.numero_factura,
-            f.fecha_emision,
-            td.codigo AS tipo_documento,
-            mo.codigo AS moneda,
-            es.codigo AS estado,
-            f.monto_subtotal,
-            f.monto_descuento,
-            f.monto_impuesto,
-            f.monto_total
-        FROM dbo.factura AS f
-        INNER JOIN dbo.tipodocumento AS td
-            ON td.tipo_documento_id = f.tipo_documento_id
-        INNER JOIN dbo.moneda AS mo
-            ON mo.moneda_id = f.moneda_id
-        INNER JOIN dbo.estadofactura AS es
-            ON es.estado_factura_id = f.estado_factura_id
-        WHERE f.cliente_id = @id
-        ORDER BY f.fecha_emision DESC;
+            F.FACTURA_ID,
+            F.NUMERO_FACTURA,
+            F.FECHA_EMISION,
+            TD.CODIGO AS TIPO_DOCUMENTO,
+            MO.CODIGO AS MONEDA,
+            ES.CODIGO AS ESTADO,
+            F.MONTO_SUBTOTAL,
+            F.MONTO_DESCUENTO,
+            F.MONTO_IMPUESTO,
+            F.MONTO_TOTAL
+        FROM DBO.FACTURA AS F
+        INNER JOIN DBO.TIPODOCUMENTO AS TD
+            ON F.TIPO_DOCUMENTO_ID = TD.TIPO_DOCUMENTO_ID
+        INNER JOIN DBO.MONEDA AS MO
+            ON F.MONEDA_ID = MO.MONEDA_ID
+        INNER JOIN DBO.ESTADOFACTURA AS ES
+            ON F.ESTADO_FACTURA_ID = ES.ESTADO_FACTURA_ID
+        WHERE F.CLIENTE_ID = @id
+        ORDER BY F.FECHA_EMISION DESC;
     END TRY
     BEGIN CATCH
         IF @@TRANCOUNT > 0
-        BEGIN
-            ROLLBACK TRANSACTION;
-        END
+            BEGIN
+                ROLLBACK TRANSACTION;
+            END
 
         SET @codigo_error = ERROR_NUMBER();
         SET @mensaje_error = LEFT(ERROR_MESSAGE(), 250);
