@@ -4,27 +4,6 @@ GO
 DROP PROCEDURE IF EXISTS DBO.USP_GENERAR_FACTURAS;
 GO
 
--- Carga masiva de facturas hasta alcanzar @cantidad_objetivo facturas en total,
--- procesadas en lotes de @tamano_lote facturas. Cada lote se ejecuta en su
--- propia transaccion: si un lote falla se revierte solo ese lote, los lotes
--- anteriores permanecen y al volver a ejecutar el procedimiento continua desde
--- donde quedo (es idempotente respecto a la cantidad objetivo).
---
--- Reglas de la carga:
---   * Cada factura tiene entre 3 y 5 lineas de detalle (3 + consecutivo % 3).
---   * numero_factura = AAAAMMDDHHMMSS-CodigoTipoDocumento, unico: cada factura
---     usa un segundo distinto dentro del ultimo ano (paso 7919, coprimo con el
---     numero de segundos de 365 dias) y, ademas, se descartan las que ya
--- existan.
---   * Estados (40 % EMITIDA, 40 % PAGADA, 10 % CANCELADA, 10 % BORRADOR),
---     monedas (80 % CRC, 20 % USD) y tipos de documento (2/3 FAC, 1/3 TIQ).
---   * Precio de linea = precio de lista (colones) / tipo_cambio.
---   * Linea: subtotal = cantidad * precio; total = subtotal - descuento +
---     impuesto, con impuesto = (subtotal - descuento) * % impuesto / 100.
---   * Los totales del encabezado son la suma exacta de sus lineas.
---   * Se descuenta stock de las facturas no canceladas (productos activos con
--- stock suficiente: >= 50 000 o servicios).
--- Los indices secundarios se crean DESPUES de la carga (scripts/04_indices).
 CREATE PROCEDURE DBO.USP_GENERAR_FACTURAS
     @cantidad_objetivo INT,
     @tamano_lote INT,
@@ -106,7 +85,6 @@ BEGIN
                 1;
             END
 
-        -- Datos de referencia numerados para repartirlos entre las facturas
         SELECT
             CAST(ROW_NUMBER() OVER (ORDER BY EMPRESA_ID) AS INT) AS RN,
             EMPRESA_ID
@@ -180,7 +158,6 @@ BEGIN
                 DROP TABLE IF EXISTS #cab;
                 DROP TABLE IF EXISTS #lin;
 
-                -- Encabezados del lote
                 SELECT
                     S.SEQ,
                     E.EMPRESA_ID,
@@ -231,12 +208,10 @@ BEGIN
 
                 UPDATE #cab
                 SET
-                    NUMERO_FACTURA
-                    = CONVERT(CHAR(8), FECHA_EMISION, 112)
-                    + REPLACE(CONVERT(CHAR(8), FECHA_EMISION, 108), ':', '')
-                    + '-' + CODIGO_TIPO;
+                    NUMERO_FACTURA = DBO.FN_GENERAR_CLAVE_COMPROBANTE(
+                        FECHA_EMISION, CODIGO_TIPO
+                    );
 
-                -- Descarta las facturas cuyo identificador ya exista
                 DELETE C
                 FROM #cab AS C
                 WHERE EXISTS (
@@ -247,7 +222,6 @@ BEGIN
 
                 CREATE UNIQUE CLUSTERED INDEX IX_TMP_CAB ON #cab (SEQ);
 
-                -- Lineas de detalle (3 a 5 por factura)
                 SELECT
                     C.SEQ,
                     L.LINEA AS NUMERO_LINEA,
@@ -311,7 +285,6 @@ BEGIN
                 CREATE UNIQUE CLUSTERED INDEX IX_TMP_LIN
                     ON #lin (SEQ, NUMERO_LINEA);
 
-                -- Encabezados: los totales son la suma de sus lineas
                 WITH T AS (
                     SELECT
                         SEQ,
@@ -357,7 +330,6 @@ BEGIN
                     ON C.SEQ = T.SEQ
                 ORDER BY C.SEQ;
 
-                -- Detalles
                 INSERT INTO DBO.FACTURA_DETALLE (
                     FACTURA_ID, ITEM_FACTURABLE_ID, NUMERO_LINEA, DESCRIPCION,
                     CANTIDAD, PRECIO_UNITARIO, PORCENTAJE_IMPUESTO,
@@ -382,7 +354,6 @@ BEGIN
                     ON C.NUMERO_FACTURA = F.NUMERO_FACTURA
                 ORDER BY F.FACTURA_ID, L.NUMERO_LINEA;
 
-                -- Existencias: las facturas no canceladas descuentan stock
                 UPDATE P
                 SET P.STOCK_ACTUAL = P.STOCK_ACTUAL - CAST(S.UNIDADES AS INT)
                 FROM DBO.PRODUCTO_CON_EXISTENCIA AS P
