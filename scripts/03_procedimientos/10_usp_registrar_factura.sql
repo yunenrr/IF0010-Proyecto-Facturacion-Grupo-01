@@ -4,24 +4,6 @@ GO
 DROP PROCEDURE IF EXISTS DBO.USP_REGISTRAR_FACTURA;
 GO
 
--- Registra una factura completa: encabezado + N lineas de detalle en una unica
--- transaccion. Garantiza que no existan encabezados sin detalle (se exige al
--- menos una linea) ni detalles sin encabezado.
---
--- @detalles (dbo.tipo_detalle_factura) trae por linea: item_facturable_id,
--- cantidad y monto_descuento (en la moneda de la factura). El precio unitario,
--- el porcentaje de impuesto y la descripcion se toman del catalogo.
---
--- Calculo financiero por linea:
---   precio_unitario = precio de lista (colones) / tipo_cambio
---   subtotal        = cantidad * precio_unitario
---   impuesto        = (subtotal - descuento) * porcentaje_impuesto / 100
---   total           = subtotal - descuento + impuesto
--- El encabezado acumula la suma de sus lineas. El identificador de comprobante
--- es AAAAMMDDHHMMSS-CodigoTipoDocumento; si ya existe uno igual se avanza la
--- fecha de emision un segundo hasta obtener uno libre.
--- Los productos con existencia descuentan stock; si no alcanza, la factura
--- completa se rechaza. Los montos negativos se rechazan.
 CREATE PROCEDURE DBO.USP_REGISTRAR_FACTURA
     @empresa_id INT,
     @cliente_id INT,
@@ -162,7 +144,6 @@ BEGIN
                 1;
             END
 
-        -- Lineas calculadas con el precio e impuesto vigentes del catalogo
         SELECT
             CAST(ROW_NUMBER() OVER (
                 ORDER BY D.ITEM_FACTURABLE_ID, D.CANTIDAD, D.MONTO_DESCUENTO
@@ -211,8 +192,6 @@ BEGIN
         UPDATE #lineas
         SET MONTO_TOTAL = MONTO_SUBTOTAL - MONTO_DESCUENTO + MONTO_IMPUESTO;
 
-        -- Existencias: los productos con existencia se facturan en unidades
-        -- enteras
         IF
             EXISTS (
                 SELECT 1
@@ -227,10 +206,6 @@ BEGIN
                 1;
             END
 
-        -- Descuento de stock producto por producto en orden de id (evita
-        -- interbloqueos entre facturas concurrentes). Cada UPDATE es atomico y
-        -- solo descuenta si alcanza; si falla, el ROLLBACK revierte lo
-        -- anterior.
         SET @item_actual = 0;
 
         WHILE 1 = 1
@@ -269,16 +244,9 @@ BEGIN
                     END
             END
 
-        -- Identificador de comprobante AAAAMMDDHHMMSS-TipoDocumento
         SET @fecha = CAST(SYSDATETIME() AS DATETIME2(0));
-        SET
-            @numero = CONVERT(CHAR(8), @fecha, 112)
-            + REPLACE(CONVERT(CHAR(8), @fecha, 108), ':', '')
-            + '-' + @codigo_tipo;
+        SET @numero = DBO.FN_GENERAR_CLAVE_COMPROBANTE(@fecha, @codigo_tipo);
 
-        -- UPDLOCK + HOLDLOCK: bloquea el rango consultado hasta el COMMIT para
-        -- que
-        -- dos sesiones no tomen el mismo identificador (ademas del UNIQUE).
         WHILE EXISTS (
             SELECT 1 FROM DBO.FACTURA WITH (UPDLOCK, HOLDLOCK)
             WHERE NUMERO_FACTURA = @numero
@@ -286,9 +254,9 @@ BEGIN
             BEGIN
                 SET @fecha = DATEADD(SECOND, 1, @fecha);
                 SET
-                    @numero = CONVERT(CHAR(8), @fecha, 112)
-                    + REPLACE(CONVERT(CHAR(8), @fecha, 108), ':', '')
-                    + '-' + @codigo_tipo;
+                    @numero = DBO.FN_GENERAR_CLAVE_COMPROBANTE(
+                        @fecha, @codigo_tipo
+                    );
             END
 
         SELECT
