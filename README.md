@@ -30,12 +30,13 @@ Base de datos vacía, en este orden (lo hace automáticamente el script de utili
 | Carpeta | Contenido |
 |---|---|
 | `scripts/01_tablas` | Crea la base `ProyectoFacturacion` (`00_crear_base_datos.sql`) y las 19 tablas, con `USE ProyectoFacturacion;` en cada archivo |
-| `scripts/02_procedimientos` | Tipo de tabla `tipo_detalle_factura` y los 16 procedimientos `usp_*` |
-| `scripts/03_datos` | Llama a los procedimientos de carga: ubicaciones de Hacienda, catálogos, 100 empresas, 50 000 clientes, 1 000 productos y 500 000 facturas (lotes de 25 000, 3 a 5 líneas cada una) |
-| `scripts/04_indices` | 10 índices no agrupados, creados **después** de las cargas para no frenarlas |
-| `scripts/05_triggers` | 13 triggers de auditoría, creados al final: las cargas masivas iniciales no se auditan |
+| `scripts/02_funciones` | Funciones escalares y de tabla (`fn_*`). Van **antes** de los procedimientos y de la carga porque `usp_registrar_factura` y `usp_generar_facturas` las usan |
+| `scripts/03_procedimientos` | Tipo de tabla `tipo_detalle_factura` y los 16 procedimientos `usp_*` |
+| `scripts/04_datos` | Llama a los procedimientos de carga: ubicaciones de Hacienda, catálogos, 100 empresas, 50 000 clientes, 1 000 productos y 500 000 facturas (lotes de 25 000, 3 a 5 líneas cada una) |
+| `scripts/05_indices` | 10 índices no agrupados, creados **después** de las cargas para no frenarlas |
+| `scripts/06_triggers` | 13 triggers de auditoría, creados al final: las cargas masivas iniciales no se auditan |
 
-Cada script de `03_datos` falla con `RAISERROR` si su procedimiento devuelve un código de error distinto de cero, y `sqlcmd -b` detiene la ejecución.
+Cada script de `04_datos` falla con `RAISERROR` si su procedimiento devuelve un código de error distinto de cero, y `sqlcmd -b` detiene la ejecución.
 
 ### Pruebas (carpeta `pruebas/`, no se ejecutan con el script anterior)
 
@@ -81,7 +82,7 @@ Todos devuelven `@codigo_error` (0 = OK) y `@mensaje_error`. `usp_registrar_fact
 
 ## Auditoría
 
-13 triggers (`scripts/05_triggers`): 3 por entidad (INSERT, UPDATE, DELETE) para **factura** (cambios de estado y montos), **factura_detalle**, **cliente** (identificación, correo, teléfono) e **item_facturable** (precio e impuesto), más `trg_auditoria_inmutable`, que impide modificar o borrar el historial.
+13 triggers (`scripts/06_triggers`): 3 por entidad (INSERT, UPDATE, DELETE) para **factura** (cambios de estado y montos), **factura_detalle**, **cliente** (identificación, correo, teléfono) e **item_facturable** (precio e impuesto), más `trg_auditoria_inmutable`, que impide modificar o borrar el historial.
 
 - Usuario: `ORIGINAL_LOGIN()`. Fecha: `SYSDATETIME()`. Ambos los pone el motor.
 - Se guardan los datos anteriores y nuevos en JSON y una descripción de los cambios.
