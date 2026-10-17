@@ -29,12 +29,14 @@ Base de datos vacía, en este orden (lo hace automáticamente el script de utili
 
 | Carpeta | Contenido |
 |---|---|
-| `scripts/01_tablas` | Crea la base `ProyectoFacturacion` (`00_crear_base_datos.sql`) y las 19 tablas, con `USE ProyectoFacturacion;` en cada archivo |
-| `scripts/02_funciones` | Funciones escalares y de tabla (`fn_*`). Van **antes** de los procedimientos y de la carga porque `usp_registrar_factura` y `usp_generar_facturas` las usan |
+| `scripts/01_tablas` | Crea la base `ProyectoFacturacion` (`00_crear_base_datos.sql`), las 19 tablas, con `USE ProyectoFacturacion;` en cada archivo, y al final los roles de seguridad y usuarios de prueba (`12_roles_seguridad.sql`) |
+| `scripts/02_funciones` | 3 funciones escalares y 2 funciones de tabla (`fn_*`). Van **antes** de los procedimientos y de la carga porque `usp_registrar_factura` y `usp_generar_facturas` usan `fn_generar_clave_comprobante` |
 | `scripts/03_procedimientos` | Tipo de tabla `tipo_detalle_factura` y los 16 procedimientos `usp_*` |
 | `scripts/04_datos` | Llama a los procedimientos de carga: ubicaciones de Hacienda, catálogos, 100 empresas, 50 000 clientes, 1 000 productos y 500 000 facturas (lotes de 25 000, 3 a 5 líneas cada una) |
 | `scripts/05_indices` | 10 índices no agrupados, creados **después** de las cargas para no frenarlas |
-| `scripts/06_triggers` | 13 triggers de auditoría, creados al final: las cargas masivas iniciales no se auditan |
+| `scripts/06_triggers` | 13 triggers de auditoría, creados después de las cargas: las cargas masivas iniciales no se auditan |
+| `scripts/07_vistas` | 2 vistas de reporte (`vw_*`) |
+| `scripts/08_consultas` | 2 consultas de demostración del control por rol (historial de cambios e información de clientes) |
 
 Cada script de `04_datos` falla con `RAISERROR` si su procedimiento devuelve un código de error distinto de cero, y `sqlcmd -b` detiene la ejecución.
 
@@ -72,6 +74,40 @@ Solo se usan restricciones `PRIMARY KEY`, `FOREIGN KEY`, `NOT NULL` y `UNIQUE`; 
 
 Todos devuelven `@codigo_error` (0 = OK) y `@mensaje_error`. `usp_registrar_factura` recibe las líneas como parámetro de tabla (`dbo.tipo_detalle_factura`).
 
+## Funciones (5)
+
+| Función | Tipo | Qué devuelve |
+|---|---|---|
+| `fn_calcular_monto_final(@factura_id)` | Escalar | Monto a pagar: subtotal − descuentos + impuestos (`NULL` si la factura no existe) |
+| `fn_generar_clave_comprobante(@fecha, @codigo_tipo_documento)` | Escalar | Clave `AAAAMMDDHHMMSS-TipoDocumento`; la usan `usp_registrar_factura` y `usp_generar_facturas` |
+| `fn_es_factura_modificable(@numero_factura)` | Escalar | `1` si la factura está en estado BORRADOR; `0` en cualquier otro estado o si no existe |
+| `fn_consultar_historial_cambios()` | De tabla | Historial de auditoría; solo devuelve filas a `ROL_AUDITOR`, `ROL_DBA` o `db_owner` |
+| `fn_consultar_cliente(@identificacion)` | De tabla | Datos del cliente (físico o jurídico); correo y teléfono completos solo para `ROL_ADMINISTRATIVO`, `ROL_DBA` o `db_owner`, enmascarados para los demás |
+
+## Vistas (2)
+
+| Vista | Columnas |
+|---|---|
+| `vw_totales_diarios` | `FechaEmision`, `NombreEmpresa`, `TipoDocumento`, `CantidadFacturas`, `SubtotalAcumulado`, `TotalDescuentos`, `TotalImpuestos`, `MontoTotalFacturado`: totales por día, empresa y tipo de documento |
+| `vw_clientes_resumen` | `Cedula`, `NombreORazonSocial`, `CantidadFacturas`, `ClienteFrecuente` (`Sí` si el cliente tiene más de 5 facturas en los últimos 6 meses) |
+
+Ninguna de las dos expone IDs técnicos.
+
+## Seguridad por roles
+
+`scripts/01_tablas/12_roles_seguridad.sql` crea cinco roles de base de datos y un usuario de prueba por rol (sin login, solo para las demostraciones con `EXECUTE AS USER`):
+
+| Rol | Usuario de prueba | Historial de cambios | Datos de clientes |
+|---|---|---|---|
+| `ROL_AUDITOR` | `USR_AUDITOR` | Ve todo | Enmascarados |
+| `ROL_DBA` (y `db_owner`) | `USR_DBA` | Ve todo | Completos |
+| `ROL_ADMINISTRATIVO` | `USR_ADMIN` | Sin filas | Completos |
+| `ROL_CAJERO` | `USR_CAJERO` | Sin filas | Enmascarados |
+| `ROL_CONSULTA` | `USR_CONSULTA` | Sin filas | Enmascarados |
+| (ninguno) | `USR_SIN_ROL` | Sin permiso | Sin permiso |
+
+Las funciones deciden con `IS_MEMBER`, y cada archivo de función concede `SELECT` a los roles al final. Las consultas de `scripts/08_consultas` muestran el resultado para cada usuario.
+
 ## Reglas de negocio
 
 - Identificador de factura: `AAAAMMDDHHMMSS-TipoDocumento` (por ejemplo `20260312143015-FAC`), con el código del tipo de documento (`FAC` o `TIQ`); único. Si ya existe, `usp_registrar_factura` avanza la fecha un segundo.
@@ -87,10 +123,13 @@ Todos devuelven `@codigo_error` (0 = OK) y `@mensaje_error`. `usp_registrar_fact
 - Usuario: `ORIGINAL_LOGIN()`. Fecha: `SYSDATETIME()`. Ambos los pone el motor.
 - Se guardan los datos anteriores y nuevos en JSON y una descripción de los cambios.
 - `auditoria` no tiene FK hacia las tablas auditadas: el historial permanece aunque se elimine la factura.
-- Consulta: `usp_consultar_auditoria` (por entidad, registro, rango de fechas o factura).
+- Consulta: `usp_consultar_auditoria` (por entidad, registro, rango de fechas o factura) y `fn_consultar_historial_cambios()` (restringida por rol).
 
 ## Notas importantes
 
+- `vw_totales_diarios` suma los montos tal como están guardados, sin convertir monedas: un día con facturas en colones y en dólares mezcla ambas monedas en la misma suma. Cuenta todas las facturas, sin importar su estado.
+- `ClienteFrecuente` cuenta todas las facturas del cliente de los últimos 6 meses, sin importar su estado.
+- La consulta de `scripts/08_consultas/01_historial_cambios_por_rol.sql` genera un cambio de prueba dentro de una transacción y lo revierte al terminar; no deja datos.
 - Si se vuelve a ejecutar una carga masiva con los triggers creados, cada fila se auditará y será mucho más lenta; con la cantidad objetivo ya alcanzada no inserta nada.
 - `empresaemisora.direccion` es texto libre: la normalización por Hacienda se pidió solo para clientes.
 - El PDF de Hacienda no incluye los distritos 2-11-03, 2-15-01, 4-03-01, 6-01-10 ni 7-01-03; no se inventaron.
