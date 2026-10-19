@@ -4,7 +4,7 @@ GO
 DROP FUNCTION IF EXISTS DBO.FN_GENERAR_CLAVE_COMPROBANTE;
 GO
 
-CREATE FUNCTION DBO.FN_GENERAR_CLAVE_COMPROBANTE (
+CREATE FUNCTION DBO.FN_GENERAR_CLAVE_COMPROBANTE(
     @fecha DATETIME2,
     @codigo_tipo_documento VARCHAR(10)
 )
@@ -12,7 +12,7 @@ RETURNS VARCHAR(50)
 AS
 BEGIN
     RETURN CONVERT(CHAR(8), @fecha, 112)
-        + REPLACE(CONVERT(CHAR(8), @fecha, 108), ':', '')
-        + '-' + @codigo_tipo_documento;
+    + REPLACE(CONVERT(CHAR(8), @fecha, 108), ':', '')
+    + '-' + @codigo_tipo_documento;
 END;
 GO
