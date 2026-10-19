@@ -8,6 +8,21 @@ DECLARE @id VARCHAR(20) = (
 );
 DECLARE @correo VARCHAR(150);
 DECLARE @telefono VARCHAR(20);
+DECLARE @orden INT = 1;
+DECLARE @total INT;
+DECLARE @usuario VARCHAR(30);
+DECLARE @rol VARCHAR(30);
+DECLARE @sql NVARCHAR(400);
+DECLARE @params NVARCHAR(200) = CONCAT(
+    N'@i VARCHAR(20), ',
+    N'@c VARCHAR(150) OUTPUT, ',
+    N'@t VARCHAR(20) OUTPUT'
+);
+DECLARE @usuarios TABLE (
+    ORDEN INT IDENTITY (1, 1),
+    USUARIO VARCHAR(30),
+    ROL VARCHAR(30)
+);
 DECLARE @demo TABLE (
     ORDEN INT IDENTITY (1, 1),
     IDENTIFICACION VARCHAR(20),
@@ -29,125 +44,56 @@ VALUES (
     ISNULL(@correo, 'SIN DATOS'), ISNULL(@telefono, 'SIN DATOS')
 );
 
-SET @correo = NULL;
-SET @telefono = NULL;
-BEGIN TRY
-    EXECUTE AS USER = 'USR_ADMIN';
-    SELECT
-        @correo = CORREO,
-        @telefono = TELEFONO
-    FROM DBO.FN_CONSULTAR_CLIENTE(@id);
-END TRY
-BEGIN CATCH
-    SET @correo = NULL;
-    SET @telefono = NULL;
-END CATCH
-REVERT;
-INSERT INTO @demo (IDENTIFICACION, USUARIO, ROL, CORREO_VISTO, TELEFONO_VISTO)
-VALUES (
-    @id, 'USR_ADMIN', 'ROL_ADMINISTRATIVO',
-    ISNULL(@correo, 'SIN PERMISO'), ISNULL(@telefono, 'SIN PERMISO')
-);
+INSERT INTO @usuarios (USUARIO, ROL) VALUES ('USR_ADMIN', 'ROL_ADMINISTRATIVO');
+INSERT INTO @usuarios (USUARIO, ROL) VALUES ('USR_DBA', 'ROL_DBA');
+INSERT INTO @usuarios (USUARIO, ROL) VALUES ('USR_CAJERO', 'ROL_CAJERO');
+INSERT INTO @usuarios (USUARIO, ROL) VALUES ('USR_CONSULTA', 'ROL_CONSULTA');
+INSERT INTO @usuarios (USUARIO, ROL) VALUES ('USR_AUDITOR', 'ROL_AUDITOR');
+INSERT INTO @usuarios (USUARIO, ROL) VALUES ('USR_SIN_ROL', '(ninguno)');
 
-SET @correo = NULL;
-SET @telefono = NULL;
-BEGIN TRY
-    EXECUTE AS USER = 'USR_DBA';
-    SELECT
-        @correo = CORREO,
-        @telefono = TELEFONO
-    FROM DBO.FN_CONSULTAR_CLIENTE(@id);
-END TRY
-BEGIN CATCH
-    SET @correo = NULL;
-    SET @telefono = NULL;
-END CATCH
-REVERT;
-INSERT INTO @demo (IDENTIFICACION, USUARIO, ROL, CORREO_VISTO, TELEFONO_VISTO)
-VALUES (
-    @id, 'USR_DBA', 'ROL_DBA',
-    ISNULL(@correo, 'SIN PERMISO'), ISNULL(@telefono, 'SIN PERMISO')
-);
+SET @total = (SELECT COUNT(*) FROM @usuarios);
 
-SET @correo = NULL;
-SET @telefono = NULL;
-BEGIN TRY
-    EXECUTE AS USER = 'USR_CAJERO';
-    SELECT
-        @correo = CORREO,
-        @telefono = TELEFONO
-    FROM DBO.FN_CONSULTAR_CLIENTE(@id);
-END TRY
-BEGIN CATCH
-    SET @correo = NULL;
-    SET @telefono = NULL;
-END CATCH
-REVERT;
-INSERT INTO @demo (IDENTIFICACION, USUARIO, ROL, CORREO_VISTO, TELEFONO_VISTO)
-VALUES (
-    @id, 'USR_CAJERO', 'ROL_CAJERO',
-    ISNULL(@correo, 'SIN PERMISO'), ISNULL(@telefono, 'SIN PERMISO')
-);
+WHILE @orden <= @total
+    BEGIN
+        SELECT
+            @usuario = USUARIO,
+            @rol = ROL
+        FROM @usuarios
+        WHERE ORDEN = @orden;
 
-SET @correo = NULL;
-SET @telefono = NULL;
-BEGIN TRY
-    EXECUTE AS USER = 'USR_CONSULTA';
-    SELECT
-        @correo = CORREO,
-        @telefono = TELEFONO
-    FROM DBO.FN_CONSULTAR_CLIENTE(@id);
-END TRY
-BEGIN CATCH
-    SET @correo = NULL;
-    SET @telefono = NULL;
-END CATCH
-REVERT;
-INSERT INTO @demo (IDENTIFICACION, USUARIO, ROL, CORREO_VISTO, TELEFONO_VISTO)
-VALUES (
-    @id, 'USR_CONSULTA', 'ROL_CONSULTA',
-    ISNULL(@correo, 'SIN PERMISO'), ISNULL(@telefono, 'SIN PERMISO')
-);
+        SET @correo = NULL;
+        SET @telefono = NULL;
+        SET @sql = CONCAT(
+            N'EXECUTE AS USER = ',
+            QUOTENAME(@usuario, ''''),
+            N'; SELECT @c = CORREO, @t = TELEFONO ',
+            N'FROM DBO.FN_CONSULTAR_CLIENTE(@i); ',
+            N'REVERT;'
+        );
 
-SET @correo = NULL;
-SET @telefono = NULL;
-BEGIN TRY
-    EXECUTE AS USER = 'USR_AUDITOR';
-    SELECT
-        @correo = CORREO,
-        @telefono = TELEFONO
-    FROM DBO.FN_CONSULTAR_CLIENTE(@id);
-END TRY
-BEGIN CATCH
-    SET @correo = NULL;
-    SET @telefono = NULL;
-END CATCH
-REVERT;
-INSERT INTO @demo (IDENTIFICACION, USUARIO, ROL, CORREO_VISTO, TELEFONO_VISTO)
-VALUES (
-    @id, 'USR_AUDITOR', 'ROL_AUDITOR',
-    ISNULL(@correo, 'SIN PERMISO'), ISNULL(@telefono, 'SIN PERMISO')
-);
+        BEGIN TRY
+            EXEC SYS.SP_EXECUTESQL
+                @sql,
+                @params,
+                @i = @id,
+                @c = @correo OUTPUT,
+                @t = @telefono OUTPUT;
+        END TRY
+        BEGIN CATCH
+            SET @correo = NULL;
+            SET @telefono = NULL;
+        END CATCH
 
-SET @correo = NULL;
-SET @telefono = NULL;
-BEGIN TRY
-    EXECUTE AS USER = 'USR_SIN_ROL';
-    SELECT
-        @correo = CORREO,
-        @telefono = TELEFONO
-    FROM DBO.FN_CONSULTAR_CLIENTE(@id);
-END TRY
-BEGIN CATCH
-    SET @correo = NULL;
-    SET @telefono = NULL;
-END CATCH
-REVERT;
-INSERT INTO @demo (IDENTIFICACION, USUARIO, ROL, CORREO_VISTO, TELEFONO_VISTO)
-VALUES (
-    @id, 'USR_SIN_ROL', '(ninguno)',
-    ISNULL(@correo, 'SIN PERMISO'), ISNULL(@telefono, 'SIN PERMISO')
-);
+        INSERT INTO @demo (
+            IDENTIFICACION, USUARIO, ROL, CORREO_VISTO, TELEFONO_VISTO
+        )
+        VALUES (
+            @id, @usuario, @rol,
+            ISNULL(@correo, 'SIN PERMISO'), ISNULL(@telefono, 'SIN PERMISO')
+        );
+
+        SET @orden = @orden + 1;
+    END
 
 SELECT
     IDENTIFICACION,
