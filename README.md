@@ -11,7 +11,8 @@ Módulo central de facturación comercial para "Soluciones Magníficas S.A.", im
 
 ## Integrantes
 
-_Completar con nombre y carné de cada integrante del grupo._
+Manuel Ernesto Trejos Angulo B87899 
+Daniel Campos Machado C21626
 
 ## Requisitos
 
