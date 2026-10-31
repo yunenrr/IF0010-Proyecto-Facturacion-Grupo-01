@@ -1,0 +1,45 @@
+USE PROYECTOFACTURACION;
+GO
+
+DROP VIEW IF EXISTS DBO.VW_CLIENTES_RESUMEN;
+GO
+
+CREATE VIEW DBO.VW_CLIENTES_RESUMEN
+AS
+SELECT
+    CL.IDENTIFICACION AS [Cedula],
+    CASE
+        WHEN CF.CLIENTE_ID IS NOT NULL
+            THEN CONCAT(CF.NOMBRE, ' ', CF.APELLIDO1, ' ', CF.APELLIDO2)
+        ELSE CJ.RAZON_SOCIAL
+    END AS [NombreORazonSocial],
+    COUNT(F.FACTURA_ID) AS [CantidadFacturas],
+    CASE
+        WHEN
+            SUM(
+                CASE
+                    WHEN
+                        F.FECHA_EMISION >= DATEADD(MONTH, -6, SYSDATETIME())
+                        AND F.FECHA_EMISION <= SYSDATETIME()
+                        THEN 1
+                    ELSE 0
+                END
+            ) > 5
+            THEN 'Sí'
+        ELSE 'No'
+    END AS [ClienteFrecuente]
+FROM DBO.CLIENTE AS CL
+LEFT JOIN DBO.CLIENTE_FISICO AS CF
+    ON CL.CLIENTE_ID = CF.CLIENTE_ID
+LEFT JOIN DBO.CLIENTE_JURIDICO AS CJ
+    ON CL.CLIENTE_ID = CJ.CLIENTE_ID
+LEFT JOIN DBO.FACTURA AS F
+    ON CL.CLIENTE_ID = F.CLIENTE_ID
+GROUP BY
+    CL.IDENTIFICACION,
+    CF.CLIENTE_ID,
+    CF.NOMBRE,
+    CF.APELLIDO1,
+    CF.APELLIDO2,
+    CJ.RAZON_SOCIAL;
+GO

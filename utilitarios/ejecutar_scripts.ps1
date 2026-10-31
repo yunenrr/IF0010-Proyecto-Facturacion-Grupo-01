@@ -8,8 +8,7 @@ $ErrorActionPreference = 'Stop'
 
 $sqlcmd = Get-Command sqlcmd -ErrorAction Stop
 $scriptsRoot = Join-Path (Split-Path -Parent $PSScriptRoot) 'scripts'
-# El orden por ruta completa define las dependencias (01_tablas, 02_procedimientos,
-# 03_datos, 04_indices, 05_triggers).
+
 $scripts = Get-ChildItem -Path $scriptsRoot -Recurse -File -Filter '*.sql' |
     Sort-Object -Property FullName
 

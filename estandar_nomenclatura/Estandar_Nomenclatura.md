@@ -14,10 +14,14 @@ Todo en minúsculas con guion bajo, sin tildes. Las tablas conservan los nombres
 | Restricción única | `uq_<tabla>_<columnas>` | `uq_factura_numero`, `uq_canton_provincia_codigo` |
 | Índice no agrupado | `ix_<tabla>_<columna>` | `ix_factura_cliente`, `ix_auditoria_registro` |
 | Procedimientos | `usp_<verbo>_<objeto>` | `usp_registrar_factura`, `usp_consultar_auditoria` |
+| Funciones (escalares y de tabla) | `fn_<verbo>_<objeto>` | `fn_calcular_monto_final`, `fn_consultar_cliente` |
+| Vistas | `vw_<descripcion>`; las columnas llevan el nombre del reporte, en PascalCase y entre corchetes | `vw_totales_diarios` con `[FechaEmision]`, `[MontoTotalFacturado]` |
 | Tipo de tabla | `tipo_<descripcion>` | `tipo_detalle_factura` |
 | Triggers | `trg_<tabla>_auditoria_<operacion>` | `trg_factura_auditoria_update`; `trg_auditoria_inmutable` |
-| Funciones / vistas | pendientes de la siguiente revisión | |
-| Archivos SQL | `NN_[N_]descripcion.sql` dentro de `NN_carpeta`; el orden alfabético es el orden de ejecución | `01_tablas/02_cliente.sql` |
+| Roles de base de datos | `rol_<nombre>` | `rol_auditor`, `rol_cajero` |
+| Usuarios de prueba (sin login) | `usr_<nombre>` | `usr_auditor`, `usr_sin_rol` |
+| Carpetas de scripts | `NN_<contenido>`; el número es el orden de ejecución: `01_tablas`, `02_funciones`, `03_procedimientos`, `04_datos`, `05_indices`, `06_triggers`, `07_vistas`, `08_consultas` | |
+| Archivos SQL | `NN_[N_]descripcion.sql` dentro de `NN_carpeta`; el orden alfabético es el orden de ejecución | `01_tablas/02_cliente.sql`, `02_funciones/01_fn_calcular_monto_final.sql` |
 | Parámetros de salida de error | `@codigo_error INT`, `@mensaje_error VARCHAR(250)` | |
 | Códigos de error propios | 50001-50999 (por familia de procedimiento) | 50213 = existencias insuficientes |
 

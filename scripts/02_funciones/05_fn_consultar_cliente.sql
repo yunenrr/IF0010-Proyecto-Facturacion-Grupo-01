@@ -1,0 +1,59 @@
+USE PROYECTOFACTURACION;
+GO
+
+DROP FUNCTION IF EXISTS DBO.FN_CONSULTAR_CLIENTE;
+GO
+
+CREATE FUNCTION DBO.FN_CONSULTAR_CLIENTE(@identificacion VARCHAR(20))
+RETURNS TABLE
+AS
+RETURN (
+    SELECT
+        CL.IDENTIFICACION,
+        PR.NOMBRE AS PROVINCIA,
+        CA.NOMBRE AS CANTON,
+        DI.NOMBRE AS DISTRITO,
+        CL.OTRAS_SENAS,
+        CASE
+            WHEN CF.CLIENTE_ID IS NOT NULL THEN 'Fisica'
+            ELSE 'Juridica'
+        END AS TIPO_PERSONA,
+        CASE
+            WHEN CF.CLIENTE_ID IS NOT NULL
+                THEN CONCAT(CF.NOMBRE, ' ', CF.APELLIDO1, ' ', CF.APELLIDO2)
+            ELSE CJ.RAZON_SOCIAL
+        END AS NOMBRE_O_RAZON_SOCIAL,
+        CASE
+            WHEN
+                IS_MEMBER('ROL_ADMINISTRATIVO') = 1
+                OR IS_MEMBER('ROL_DBA') = 1
+                OR IS_MEMBER('db_owner') = 1
+                THEN CL.CORREO
+            ELSE CONCAT(
+                LEFT(CL.CORREO, 1),
+                '***',
+                SUBSTRING(CL.CORREO, CHARINDEX('@', CL.CORREO), LEN(CL.CORREO))
+            )
+        END AS CORREO,
+        CASE
+            WHEN
+                IS_MEMBER('ROL_ADMINISTRATIVO') = 1
+                OR IS_MEMBER('ROL_DBA') = 1
+                OR IS_MEMBER('db_owner') = 1
+                THEN CL.TELEFONO
+            ELSE CONCAT('****', RIGHT(CL.TELEFONO, 4))
+        END AS TELEFONO
+    FROM DBO.CLIENTE AS CL
+    LEFT JOIN DBO.CLIENTE_FISICO AS CF
+        ON CL.CLIENTE_ID = CF.CLIENTE_ID
+    LEFT JOIN DBO.CLIENTE_JURIDICO AS CJ
+        ON CL.CLIENTE_ID = CJ.CLIENTE_ID
+    INNER JOIN DBO.DISTRITO AS DI
+        ON CL.DISTRITO_ID = DI.DISTRITO_ID
+    INNER JOIN DBO.CANTON AS CA
+        ON DI.CANTON_ID = CA.CANTON_ID
+    INNER JOIN DBO.PROVINCIA AS PR
+        ON CA.PROVINCIA_ID = PR.PROVINCIA_ID
+    WHERE CL.IDENTIFICACION = @identificacion
+);
+GO
