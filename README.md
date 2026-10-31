@@ -29,14 +29,15 @@ Base de datos vacía, en este orden (lo hace automáticamente el script de utili
 
 | Carpeta | Contenido |
 |---|---|
-| `scripts/01_tablas` | Crea la base `ProyectoFacturacion` (`00_crear_base_datos.sql`), las 19 tablas, con `USE ProyectoFacturacion;` en cada archivo, y al final los roles de seguridad y usuarios de prueba (`12_roles_seguridad.sql`) |
+| `scripts/01_tablas` | Crea la base `ProyectoFacturacion` (`00_crear_base_datos.sql`) y las 19 tablas, con `USE ProyectoFacturacion;` en cada archivo |
 | `scripts/02_funciones` | 3 funciones escalares y 2 funciones de tabla (`fn_*`). Van **antes** de los procedimientos y de la carga porque `usp_registrar_factura` y `usp_generar_facturas` usan `fn_generar_clave_comprobante` |
 | `scripts/03_procedimientos` | Tipo de tabla `tipo_detalle_factura` y los 16 procedimientos `usp_*` |
 | `scripts/04_datos` | Llama a los procedimientos de carga: ubicaciones de Hacienda, catálogos, 100 empresas, 50 000 clientes, 1 000 productos y 500 000 facturas (lotes de 25 000, 3 a 5 líneas cada una) |
 | `scripts/05_indices` | 10 índices no agrupados, creados **después** de las cargas para no frenarlas |
 | `scripts/06_triggers` | 13 triggers de auditoría, creados después de las cargas: las cargas masivas iniciales no se auditan |
 | `scripts/07_vistas` | 2 vistas de reporte (`vw_*`) |
-| `scripts/08_consultas` | 2 consultas de demostración del control por rol (historial de cambios e información de clientes) |
+| `scripts/08_seguridad` | Roles de base de datos, usuarios de prueba y permisos `SELECT` sobre las funciones; va después de las funciones porque los permisos las referencian |
+| `scripts/09_demostraciones` | 2 consultas de demostración del control por rol (historial de cambios e información de clientes) |
 
 Cada script de `04_datos` falla con `RAISERROR` si su procedimiento devuelve un código de error distinto de cero, y `sqlcmd -b` detiene la ejecución.
 
@@ -95,7 +96,7 @@ Ninguna de las dos expone IDs técnicos.
 
 ## Seguridad por roles
 
-`scripts/01_tablas/12_roles_seguridad.sql` crea cinco roles de base de datos y un usuario de prueba por rol (sin login, solo para las demostraciones con `EXECUTE AS USER`):
+`scripts/08_seguridad/01_roles_usuarios.sql` crea cinco roles de base de datos y un usuario de prueba por rol (sin login, solo para las demostraciones con `EXECUTE AS USER`), y concede `SELECT` sobre `fn_consultar_historial_cambios` y `fn_consultar_cliente`:
 
 | Rol | Usuario de prueba | Historial de cambios | Datos de clientes |
 |---|---|---|---|
@@ -106,7 +107,7 @@ Ninguna de las dos expone IDs técnicos.
 | `ROL_CONSULTA` | `USR_CONSULTA` | Sin filas | Enmascarados |
 | (ninguno) | `USR_SIN_ROL` | Sin permiso | Sin permiso |
 
-Las funciones deciden con `IS_MEMBER`, y cada archivo de función concede `SELECT` a los roles al final. Las consultas de `scripts/08_consultas` muestran el resultado para cada usuario.
+Las funciones deciden con `IS_MEMBER`. Las consultas de `scripts/09_demostraciones` muestran el resultado para cada usuario.
 
 ## Reglas de negocio
 
@@ -129,7 +130,7 @@ Las funciones deciden con `IS_MEMBER`, y cada archivo de función concede `SELEC
 
 - `vw_totales_diarios` suma los montos tal como están guardados, sin convertir monedas: un día con facturas en colones y en dólares mezcla ambas monedas en la misma suma. Cuenta todas las facturas, sin importar su estado.
 - `ClienteFrecuente` cuenta todas las facturas del cliente de los últimos 6 meses, sin importar su estado.
-- La consulta de `scripts/08_consultas/01_historial_cambios_por_rol.sql` genera un cambio de prueba dentro de una transacción y lo revierte al terminar; no deja datos.
+- La consulta de `scripts/09_demostraciones/01_historial_cambios_por_rol.sql` genera un cambio de prueba dentro de una transacción y lo revierte al terminar; no deja datos.
 - Si se vuelve a ejecutar una carga masiva con los triggers creados, cada fila se auditará y será mucho más lenta; con la cantidad objetivo ya alcanzada no inserta nada.
 - `empresaemisora.direccion` es texto libre: la normalización por Hacienda se pidió solo para clientes.
 - El PDF de Hacienda no incluye los distritos 2-11-03, 2-15-01, 4-03-01, 6-01-10 ni 7-01-03; no se inventaron.
