@@ -4,11 +4,6 @@ GO
 DROP PROCEDURE IF EXISTS DBO.USP_CARGAR_CATALOGOS;
 GO
 
--- Carga idempotente de los catalogos del sistema: tipos de documento, monedas,
--- estados de factura, unidades de medida, tipos de operacion y entidades
--- auditadas.
--- Las ubicaciones (provincia / canton / distrito) las carga
--- usp_cargar_ubicaciones.
 CREATE PROCEDURE DBO.USP_CARGAR_CATALOGOS
     @codigo_error INT OUTPUT,
     @mensaje_error VARCHAR(250) OUTPUT
@@ -23,7 +18,6 @@ BEGIN
     BEGIN TRY
         BEGIN TRANSACTION;
 
-        -- Tipos de documento
         INSERT INTO DBO.TIPODOCUMENTO (CODIGO, DESCRIPCION)
         SELECT
             V.CODIGO,
@@ -38,7 +32,6 @@ BEGIN
             WHERE T.CODIGO = V.CODIGO
         );
 
-        -- Monedas
         INSERT INTO DBO.MONEDA (CODIGO, SIMBOLO, DESCRIPCION)
         SELECT
             V.CODIGO,
@@ -54,7 +47,6 @@ BEGIN
             WHERE M.CODIGO = V.CODIGO
         );
 
-        -- Estados de factura
         INSERT INTO DBO.ESTADOFACTURA (CODIGO, DESCRIPCION)
         SELECT
             V.CODIGO,
@@ -71,7 +63,6 @@ BEGIN
             WHERE E.CODIGO = V.CODIGO
         );
 
-        -- Unidades de medida
         INSERT INTO DBO.UNIDAD_MEDIDA (DESCRIPCION)
         SELECT V.DESCRIPCION
         FROM (
@@ -88,7 +79,6 @@ BEGIN
             WHERE U.DESCRIPCION = V.DESCRIPCION
         );
 
-        -- Tipos de operacion de auditoria
         INSERT INTO DBO.TIPO_OPERACION (DESCRIPCION)
         SELECT V.DESCRIPCION
         FROM (
@@ -103,7 +93,6 @@ BEGIN
             WHERE O.DESCRIPCION = V.DESCRIPCION
         );
 
-        -- Entidades que se auditan
         INSERT INTO DBO.ENTIDAD_AUDITADA (NOMBRE)
         SELECT V.NOMBRE
         FROM (
@@ -111,7 +100,12 @@ BEGIN
             ('FACTURA'),
             ('FACTURA_DETALLE'),
             ('CLIENTE'),
-            ('ITEM_FACTURABLE')
+            ('ITEM_FACTURABLE'),
+            ('CLIENTE_FISICO'),
+            ('CLIENTE_JURIDICO'),
+            ('CLIENTE_DIRECCION'),
+            ('PRODUCTO_CON_EXISTENCIA'),
+            ('SERVICIO')
         ) AS V(NOMBRE)
         WHERE NOT EXISTS (
             SELECT 1 FROM DBO.ENTIDAD_AUDITADA AS E
