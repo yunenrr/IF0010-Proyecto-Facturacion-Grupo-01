@@ -33,14 +33,15 @@ Base de datos vacía, en este orden (lo hace automáticamente el script de utili
 | `scripts/01_tablas` | Crea la base `ProyectoFacturacion` (`00_crear_base_datos.sql`) y las 19 tablas, con `USE ProyectoFacturacion;` en cada archivo |
 | `scripts/02_funciones` | 3 funciones escalares y 2 funciones de tabla (`fn_*`). Van **antes** de los procedimientos y de la carga porque `usp_registrar_factura` y `usp_generar_facturas` usan `fn_generar_clave_comprobante` |
 | `scripts/03_procedimientos` | Tipo de tabla `tipo_detalle_factura` y los 16 procedimientos `usp_*` |
-| `scripts/04_datos` | Llama a los procedimientos de carga: ubicaciones de Hacienda, catálogos, 100 empresas, 50 000 clientes, 1 000 productos y 500 000 facturas (lotes de 25 000, 3 a 5 líneas cada una) |
-| `scripts/05_indices` | 10 índices no agrupados, creados **después** de las cargas para no frenarlas |
-| `scripts/06_triggers` | 13 triggers de auditoría, creados después de las cargas: las cargas masivas iniciales no se auditan |
+| `scripts/04_triggers` | 25 triggers de auditoría, creados **antes** de la carga masiva para que los datos cargados también queden en el historial |
+| `scripts/05_datos` | Llama a los procedimientos de carga: ubicaciones de Hacienda, catálogos, 100 empresas, 50 000 clientes, 1 000 productos y 500 000 facturas (lotes de 25 000, 3 a 5 líneas cada una) |
+| `scripts/06_indices` | 14 índices no agrupados, creados **después** de las cargas para no frenarlas |
 | `scripts/07_vistas` | 2 vistas de reporte (`vw_*`) |
 | `scripts/08_seguridad` | Roles de base de datos, usuarios de prueba y permisos `SELECT` sobre las funciones; va después de las funciones porque los permisos las referencian |
 | `scripts/09_demostraciones` | 2 consultas de demostración del control por rol (historial de cambios e información de clientes) |
+| `scripts/10_consultas` | 8 consultas de búsqueda y reporte con valores de ejemplo fijos |
 
-Cada script de `04_datos` falla con `RAISERROR` si su procedimiento devuelve un código de error distinto de cero, y `sqlcmd -b` detiene la ejecución.
+Cada script de `05_datos` falla con `RAISERROR` si su procedimiento devuelve un código de error distinto de cero, y `sqlcmd -b` detiene la ejecución.
 
 ### Pruebas (carpeta `pruebas/`, no se ejecutan con el script anterior)
 
@@ -91,7 +92,7 @@ Todos devuelven `@codigo_error` (0 = OK) y `@mensaje_error`. `usp_registrar_fact
 | Vista | Columnas |
 |---|---|
 | `vw_totales_diarios` | `FechaEmision`, `NombreEmpresa`, `TipoDocumento`, `CantidadFacturas`, `SubtotalAcumulado`, `TotalDescuentos`, `TotalImpuestos`, `MontoTotalFacturado`: totales por día, empresa y tipo de documento |
-| `vw_clientes_resumen` | `Cedula`, `NombreORazonSocial`, `CantidadFacturas`, `ClienteFrecuente` (`Sí` si el cliente tiene más de 5 facturas en los últimos 6 meses) |
+| `vw_clientes_resumen` | `Cedula`, `NombreORazonSocial`, `CantidadFacturas`, `ClienteFrecuente` (`Sí` si el cliente tiene más de 5 facturas entre hace 6 meses y la fecha actual) |
 
 Ninguna de las dos expone IDs técnicos.
 
@@ -110,6 +111,21 @@ Ninguna de las dos expone IDs técnicos.
 
 Las funciones deciden con `IS_MEMBER`. Las consultas de `scripts/09_demostraciones` muestran el resultado para cada usuario.
 
+## Consultas (8)
+
+Están en `scripts/10_consultas`. Cada una usa un valor de ejemplo fijo, que corresponde a un registro de los datos generados, y devuelve el resultado pedido.
+
+| Archivo | Qué devuelve |
+|---|---|
+| `01_facturas_persona_fisica.sql` | Encabezado de las facturas de una persona física a partir de su cédula |
+| `02_facturas_persona_juridica.sql` | Encabezado de las facturas de una persona jurídica a partir de su cédula |
+| `03_buscar_persona_fisica_nombre_apellido1.sql` | Personas físicas por nombre y primer apellido |
+| `04_buscar_persona_fisica_nombre_apellido2.sql` | Personas físicas por nombre y segundo apellido |
+| `05_buscar_persona_juridica_razon_social.sql` | Personas jurídicas por razón social |
+| `06_buscar_persona_juridica_nombre_comercial.sql` | Personas jurídicas por nombre comercial |
+| `07_totales_cliente_anio_vigente.sql` | Total de descuentos, de impuestos y monto total facturado de un cliente en el año vigente, en colones |
+| `08_ventas_producto_rango_fechas.sql` | Identificador de factura, cantidad y fecha de emisión de un producto en un rango de fechas |
+
 ## Reglas de negocio
 
 - Identificador de factura: `AAAAMMDDHHMMSS-TipoDocumento` (por ejemplo `20260312143015-FAC`), con el código del tipo de documento (`FAC` o `TIQ`); único. Si ya existe, `usp_registrar_factura` avanza la fecha un segundo.
@@ -120,7 +136,14 @@ Las funciones deciden con `IS_MEMBER`. Las consultas de `scripts/09_demostracion
 
 ## Auditoría
 
-13 triggers (`scripts/06_triggers`): 3 por entidad (INSERT, UPDATE, DELETE) para **factura** (cambios de estado y montos), **factura_detalle**, **cliente** (identificación, correo, teléfono) e **item_facturable** (precio e impuesto), más `trg_auditoria_inmutable`, que impide modificar o borrar el historial.
+25 triggers (`scripts/04_triggers`), creados antes de la carga masiva. Cada trigger de factura, factura_detalle, producto y servicio está en su propio archivo:
+
+- **INSERT, UPDATE y DELETE** para **factura** (todas las columnas), **factura_detalle** (todas las columnas), **cliente** (identificación, correo, teléfono), **cliente_fisico** (nombre y apellidos), **cliente_juridico** (razón social y nombre comercial), **producto** (`producto_con_existencia`: stock) y **servicio** (unidad de medida).
+- **UPDATE** de **producto** y de **servicio** sobre `item_facturable`: código, descripción, precio, impuesto y estado activo. Solo registran los artículos que son productos o servicios, respectivamente.
+- **UPDATE** de la **dirección del cliente** (distrito y otras señas). La dirección se guarda en `cliente`, por lo que el trigger está sobre esa tabla.
+- `trg_auditoria_inmutable`, que impide modificar o borrar el historial.
+
+Detalles:
 
 - Usuario: `ORIGINAL_LOGIN()`. Fecha: `SYSDATETIME()`. Ambos los pone el motor.
 - Se guardan los datos anteriores y nuevos en JSON y una descripción de los cambios.
@@ -129,10 +152,12 @@ Las funciones deciden con `IS_MEMBER`. Las consultas de `scripts/09_demostracion
 
 ## Notas importantes
 
+- Como los triggers se crean antes de la carga masiva, los datos iniciales también quedan registrados en `auditoria` (una fila por cliente, producto, factura y línea de detalle). Por eso la carga completa tarda más que sin auditoría.
 - `vw_totales_diarios` suma los montos tal como están guardados, sin convertir monedas: un día con facturas en colones y en dólares mezcla ambas monedas en la misma suma. Cuenta todas las facturas, sin importar su estado.
-- `ClienteFrecuente` cuenta todas las facturas del cliente de los últimos 6 meses, sin importar su estado.
+- `ClienteFrecuente` cuenta las facturas del cliente emitidas entre hace 6 meses y la fecha actual (no cuenta facturas con fecha futura), sin importar su estado.
+- La consulta `07_totales_cliente_anio_vigente.sql` convierte los montos a colones con el tipo de cambio de cada factura y solo cuenta facturas EMITIDAS y PAGADAS.
+- Las consultas de `scripts/10_consultas` usan valores fijos que existen en los datos generados (por ejemplo, la cédula `100000001`, el producto `PROD-000001`). Para medir su tiempo de respuesta se puede usar `SET STATISTICS TIME ON` en SSMS.
 - La consulta de `scripts/09_demostraciones/01_historial_cambios_por_rol.sql` genera un cambio de prueba dentro de una transacción y lo revierte al terminar; no deja datos.
-- Si se vuelve a ejecutar una carga masiva con los triggers creados, cada fila se auditará y será mucho más lenta; con la cantidad objetivo ya alcanzada no inserta nada.
 - `empresaemisora.direccion` es texto libre: la normalización por Hacienda se pidió solo para clientes.
 - El PDF de Hacienda no incluye los distritos 2-11-03, 2-15-01, 4-03-01, 6-01-10 ni 7-01-03; no se inventaron.
 - Los símbolos de moneda se guardan como `VARCHAR` (el colón como `¢`).
