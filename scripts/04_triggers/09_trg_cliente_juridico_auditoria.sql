@@ -1,19 +1,11 @@
 USE PROYECTOFACTURACION;
 GO
 
--- Audita el precio de lista y el porcentaje de impuesto de productos y
--- servicios.
--- Usuario: ORIGINAL_LOGIN() (login autenticado en SQL Server). Fecha:
--- SYSDATETIME().
--- Se ejecuta dentro de la transaccion del cambio: si el cambio se revierte, la
--- fila de auditoria tambien. Opera por conjuntos (multiples filas por
--- sentencia).
-
-DROP TRIGGER IF EXISTS DBO.TRG_ITEM_FACTURABLE_AUDITORIA_INSERT;
+DROP TRIGGER IF EXISTS DBO.TRG_CLIENTE_JURIDICO_AUDITORIA_INSERT;
 GO
 
-CREATE TRIGGER DBO.TRG_ITEM_FACTURABLE_AUDITORIA_INSERT
-ON DBO.ITEM_FACTURABLE
+CREATE TRIGGER DBO.TRG_CLIENTE_JURIDICO_AUDITORIA_INSERT
+ON DBO.CLIENTE_JURIDICO
 AFTER INSERT
 AS
 BEGIN
@@ -22,7 +14,7 @@ BEGIN
     DECLARE @entidad_id INT = (
         SELECT ENTIDAD_AUDITADA_ID
         FROM DBO.ENTIDAD_AUDITADA
-        WHERE NOMBRE = 'ITEM_FACTURABLE'
+        WHERE NOMBRE = 'CLIENTE_JURIDICO'
     );
     DECLARE @operacion_id INT = (
         SELECT TIPO_OPERACION_ID
@@ -47,44 +39,39 @@ BEGIN
     )
     SELECT
         @entidad_id AS ENTIDAD_AUDITADA_ID,
-        I.ITEM_FACTURABLE_ID,
+        I.CLIENTE_ID,
         @operacion_id AS TIPO_OPERACION_ID,
         ORIGINAL_LOGIN() AS USUARIO,
         SYSDATETIME() AS FECHA_CAMBIO,
         LEFT(
             CONCAT(
-                'INSERT item_facturable ',
-                I.ITEM_FACTURABLE_ID,
+                'INSERT cliente_juridico ',
+                I.CLIENTE_ID,
                 ': ',
-                'codigo ',
-                I.CODIGO_INTERNO,
-                ', precio ',
-                I.PRECIO_UNITARIO,
-                ', impuesto ',
-                I.PORCENTAJE_IMPUESTO
+                'razon_social ',
+                I.RAZON_SOCIAL,
+                ', nombre_comercial ',
+                I.NOMBRE_COMERCIAL
             ),
             1000
         ) AS DESCRIPCION,
         N'{}' AS DATOS_ANTERIORES,
         (
             SELECT
-                I.ITEM_FACTURABLE_ID,
-                I.CODIGO_INTERNO,
-                I.DESCRIPCION,
-                I.PRECIO_UNITARIO,
-                I.PORCENTAJE_IMPUESTO,
-                I.ACTIVO
+                I.CLIENTE_ID,
+                I.RAZON_SOCIAL,
+                I.NOMBRE_COMERCIAL
             FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
         ) AS DATOS_NUEVOS
     FROM INSERTED AS I;
 END;
 GO
 
-DROP TRIGGER IF EXISTS DBO.TRG_ITEM_FACTURABLE_AUDITORIA_DELETE;
+DROP TRIGGER IF EXISTS DBO.TRG_CLIENTE_JURIDICO_AUDITORIA_DELETE;
 GO
 
-CREATE TRIGGER DBO.TRG_ITEM_FACTURABLE_AUDITORIA_DELETE
-ON DBO.ITEM_FACTURABLE
+CREATE TRIGGER DBO.TRG_CLIENTE_JURIDICO_AUDITORIA_DELETE
+ON DBO.CLIENTE_JURIDICO
 AFTER DELETE
 AS
 BEGIN
@@ -93,7 +80,7 @@ BEGIN
     DECLARE @entidad_id INT = (
         SELECT ENTIDAD_AUDITADA_ID
         FROM DBO.ENTIDAD_AUDITADA
-        WHERE NOMBRE = 'ITEM_FACTURABLE'
+        WHERE NOMBRE = 'CLIENTE_JURIDICO'
     );
     DECLARE @operacion_id INT = (
         SELECT TIPO_OPERACION_ID
@@ -118,32 +105,27 @@ BEGIN
     )
     SELECT
         @entidad_id AS ENTIDAD_AUDITADA_ID,
-        D.ITEM_FACTURABLE_ID,
+        D.CLIENTE_ID,
         @operacion_id AS TIPO_OPERACION_ID,
         ORIGINAL_LOGIN() AS USUARIO,
         SYSDATETIME() AS FECHA_CAMBIO,
         LEFT(
             CONCAT(
-                'DELETE item_facturable ',
-                D.ITEM_FACTURABLE_ID,
+                'DELETE cliente_juridico ',
+                D.CLIENTE_ID,
                 ': ',
-                'codigo ',
-                D.CODIGO_INTERNO,
-                ', precio ',
-                D.PRECIO_UNITARIO,
-                ', impuesto ',
-                D.PORCENTAJE_IMPUESTO
+                'razon_social ',
+                D.RAZON_SOCIAL,
+                ', nombre_comercial ',
+                D.NOMBRE_COMERCIAL
             ),
             1000
         ) AS DESCRIPCION,
         (
             SELECT
-                D.ITEM_FACTURABLE_ID,
-                D.CODIGO_INTERNO,
-                D.DESCRIPCION,
-                D.PRECIO_UNITARIO,
-                D.PORCENTAJE_IMPUESTO,
-                D.ACTIVO
+                D.CLIENTE_ID,
+                D.RAZON_SOCIAL,
+                D.NOMBRE_COMERCIAL
             FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
         ) AS DATOS_ANTERIORES,
         N'{}' AS DATOS_NUEVOS
@@ -151,11 +133,11 @@ BEGIN
 END;
 GO
 
-DROP TRIGGER IF EXISTS DBO.TRG_ITEM_FACTURABLE_AUDITORIA_UPDATE;
+DROP TRIGGER IF EXISTS DBO.TRG_CLIENTE_JURIDICO_AUDITORIA_UPDATE;
 GO
 
-CREATE TRIGGER DBO.TRG_ITEM_FACTURABLE_AUDITORIA_UPDATE
-ON DBO.ITEM_FACTURABLE
+CREATE TRIGGER DBO.TRG_CLIENTE_JURIDICO_AUDITORIA_UPDATE
+ON DBO.CLIENTE_JURIDICO
 AFTER UPDATE
 AS
 BEGIN
@@ -164,7 +146,7 @@ BEGIN
     DECLARE @entidad_id INT = (
         SELECT ENTIDAD_AUDITADA_ID
         FROM DBO.ENTIDAD_AUDITADA
-        WHERE NOMBRE = 'ITEM_FACTURABLE'
+        WHERE NOMBRE = 'CLIENTE_JURIDICO'
     );
     DECLARE @operacion_id INT = (
         SELECT TIPO_OPERACION_ID
@@ -189,30 +171,30 @@ BEGIN
     )
     SELECT
         @entidad_id AS ENTIDAD_AUDITADA_ID,
-        I.ITEM_FACTURABLE_ID,
+        I.CLIENTE_ID,
         @operacion_id AS TIPO_OPERACION_ID,
         ORIGINAL_LOGIN() AS USUARIO,
         SYSDATETIME() AS FECHA_CAMBIO,
         LEFT(CONCAT(
-            'UPDATE item_facturable ', I.ITEM_FACTURABLE_ID, ': ',
+            'UPDATE cliente_juridico ', I.CLIENTE_ID, ': ',
             IIF(
-                D.PRECIO_UNITARIO <> I.PRECIO_UNITARIO,
+                D.RAZON_SOCIAL <> I.RAZON_SOCIAL,
                 CONCAT(
-                    'precio_unitario ',
-                    D.PRECIO_UNITARIO,
+                    'razon_social ',
+                    D.RAZON_SOCIAL,
                     ' -> ',
-                    I.PRECIO_UNITARIO,
+                    I.RAZON_SOCIAL,
                     '; '
                 ),
                 ''
             ),
             IIF(
-                D.PORCENTAJE_IMPUESTO <> I.PORCENTAJE_IMPUESTO,
+                D.NOMBRE_COMERCIAL <> I.NOMBRE_COMERCIAL,
                 CONCAT(
-                    'porcentaje_impuesto ',
-                    D.PORCENTAJE_IMPUESTO,
+                    'nombre_comercial ',
+                    D.NOMBRE_COMERCIAL,
                     ' -> ',
-                    I.PORCENTAJE_IMPUESTO,
+                    I.NOMBRE_COMERCIAL,
                     '; '
                 ),
                 ''
@@ -220,29 +202,23 @@ BEGIN
         ), 1000) AS DESCRIPCION,
         (
             SELECT
-                D.ITEM_FACTURABLE_ID,
-                D.CODIGO_INTERNO,
-                D.DESCRIPCION,
-                D.PRECIO_UNITARIO,
-                D.PORCENTAJE_IMPUESTO,
-                D.ACTIVO
+                D.CLIENTE_ID,
+                D.RAZON_SOCIAL,
+                D.NOMBRE_COMERCIAL
             FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
         ) AS DATOS_ANTERIORES,
         (
             SELECT
-                I.ITEM_FACTURABLE_ID,
-                I.CODIGO_INTERNO,
-                I.DESCRIPCION,
-                I.PRECIO_UNITARIO,
-                I.PORCENTAJE_IMPUESTO,
-                I.ACTIVO
+                I.CLIENTE_ID,
+                I.RAZON_SOCIAL,
+                I.NOMBRE_COMERCIAL
             FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
         ) AS DATOS_NUEVOS
     FROM INSERTED AS I
     INNER JOIN DELETED AS D
-        ON I.ITEM_FACTURABLE_ID = D.ITEM_FACTURABLE_ID
+        ON I.CLIENTE_ID = D.CLIENTE_ID
     WHERE
-        D.PRECIO_UNITARIO <> I.PRECIO_UNITARIO
-        OR D.PORCENTAJE_IMPUESTO <> I.PORCENTAJE_IMPUESTO;
+        D.RAZON_SOCIAL <> I.RAZON_SOCIAL
+        OR D.NOMBRE_COMERCIAL <> I.NOMBRE_COMERCIAL;
 END;
 GO
