@@ -20,7 +20,12 @@ Todo en minúsculas con guion bajo, sin tildes. Las tablas conservan los nombres
 | Triggers | `trg_<tabla>_auditoria_<operacion>` | `trg_factura_auditoria_update`; `trg_auditoria_inmutable` |
 | Roles de base de datos | `rol_<nombre>` | `rol_auditor`, `rol_cajero` |
 | Usuarios de prueba (sin login) | `usr_<nombre>` | `usr_auditor`, `usr_sin_rol` |
-| Carpetas de scripts | `NN_<contenido>`; el número es el orden de ejecución: `01_tablas`, `02_funciones`, `03_procedimientos`, `04_datos`, `05_indices`, `06_triggers`, `07_vistas`, `08_consultas` | |
+| Carpetas de scripts | `NN_<contenido>`; el número es el orden de ejecución: `01_tablas`, `02_funciones`, `03_procedimientos`, `04_triggers`, `05_datos`, `06_indices`, `07_vistas`, `08_seguridad`, `09_demostraciones`, `10_consultas` | |
+| Archivos SQL | `NN_[N_]descripcion.sql` dentro de `NN_carpeta`; el orden alfabético es el orden de ejecución | `01_tablas/02_cliente.sql`, `02_funciones/01_fn_calcular_monto_final.sql` |
+| Parámetros de salida de error | `@codigo_error INT`, `@mensaje_error VARCHAR(250)` | |
+| Códigos de error propios | 50001-50999 (por familia de procedimiento) | 50213 = existencias insuficientes |
+
+Estilo SQL (`.sqlfluff`, dialecto `tsql`): palabras clave, funciones y literales en MAYÚSCULAS; identificadores en minúsculas.
 | Archivos SQL | `NN_[N_]descripcion.sql` dentro de `NN_carpeta`; el orden alfabético es el orden de ejecución | `01_tablas/02_cliente.sql`, `02_funciones/01_fn_calcular_monto_final.sql` |
 | Parámetros de salida de error | `@codigo_error INT`, `@mensaje_error VARCHAR(250)` | |
 | Códigos de error propios | 50001-50999 (por familia de procedimiento) | 50213 = existencias insuficientes |
