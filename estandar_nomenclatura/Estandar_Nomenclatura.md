@@ -1,4 +1,4 @@
-# Estándar de nomenclatura (reflejado en los scripts)
+# Estándar de nomenclatura
 
 Este documento combina las convenciones **observadas** en los scripts de la versión suministrada con las **reglas de estilo adoptadas por el equipo**. Cuando un nombre se aparta del patrón, se documenta en [Excepciones conocidas](#excepciones-conocidas) sin renombrar objetos que ya existen. Se revisaron `scripts/`, `pruebas/` y `utilitarios/`.
 
