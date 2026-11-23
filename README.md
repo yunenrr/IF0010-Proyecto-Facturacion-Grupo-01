@@ -18,17 +18,12 @@ Daniel Campos Machado C21626
 
 | Ruta | Contenido |
 |---|---|
-| `scripts/` | 92 archivos SQL organizados en 10 carpetas numeradas por orden de ejecución (ver más abajo) |
-| `pruebas/` | 4 scripts de prueba y validación; no los ejecuta el script de utilitarios |
-| `utilitarios/ejecutar_scripts.ps1` | Ejecuta todos los archivos de `scripts/` en orden con `sqlcmd` |
-| `diagrama_ER/Diagrama_ER.md` | Diagrama relacional original en Mermaid |
-| `diagrama_ER/ProyectoFacturacion_DER_horizontal_sin_leyenda.svg` | DER horizontal de notación conceptual con rombos y atributos; ampliable sin pérdida de nitidez |
-| `diagrama_ER/ProyectoFacturacion_DER_horizontal_sin_leyenda.dot` | Fuente Graphviz editable del DER horizontal |
-| `diagrama_ER/ProyectoFacturacion_DER_horizontal_sin_leyenda.png` | Vista previa del DER horizontal |
-| `estandar_nomenclatura/Estandar_Nomenclatura.md` | Convenciones de nombres, códigos de error y estilo SQL |
-| `presentacion/` | Presentación del proyecto |
-
-Los archivos `.txt` originales de `diagrama_ER/`, `estandar_nomenclatura/` y `presentacion/` actúan como marcadores de otros entregables; el estándar actualizado está disponible en Markdown.
+| `scripts/` | 92 archivos SQL organizados en 10 carpetas numeradas según su orden de ejecución. |
+| `pruebas/` | 4 scripts para comprobar el funcionamiento de los procedimientos, las cargas, la concurrencia y la auditoría. |
+| `utilitarios/ejecutar_scripts.ps1` | Script de PowerShell que ejecuta los archivos SQL en orden mediante `sqlcmd`. |
+| `diagrama_ER/Diagrama_ER_Proyecto_Facturacion Manuel Trejos - Daniel Campos.pdf` | Diagrama entidad-relación del sistema de facturación, incluyendo entidades, atributos y relaciones. |
+| `estandar_nomenclatura/Estándar Nomenclatura.pdf` | Documento que establece las convenciones de nombres utilizadas en los objetos SQL del proyecto. |
+| `presentacion/` | Carpeta destinada a la presentación del proyecto. |
 
 ## Validación de código
 
@@ -92,7 +87,10 @@ Ejecutar en SSMS, sobre `ProyectoFacturacion`, **después** de terminar `scripts
 
 ## Modelo (19 tablas)
 
-El modelo original se encuentra en `diagrama_ER/Diagrama_ER.md` (Mermaid). El DER horizontal definitivo se entrega también en **SVG** y **DOT** dentro de `diagrama_ER/`, manteniendo rectángulos, rombos, atributos y especializaciones. Las reglas de nombres están en `estandar_nomenclatura/Estandar_Nomenclatura.md`. Estos diagramas son representaciones conceptuales; la definición ejecutable de claves y restricciones sigue siendo la de los scripts de `scripts/01_tablas/`.
+El modelo entidad-relación del sistema se encuentra documentado en `diagrama_ER/Diagrama_ER_Proyecto_Facturacion Manuel Trejos - Daniel Campos.pdf`. Este documento representa las entidades, sus atributos, relaciones y cardinalidades. Las convenciones utilizadas para nombrar los diferentes objetos de la base de datos se encuentran en `estandar_nomenclatura/Estándar Nomenclatura.pdf`.
+
+La definición ejecutable de las tablas, llaves primarias, llaves foráneas y demás restricciones se encuentra en los scripts de `scripts/01_tablas/`.
+
 
 - **Ubicaciones:** `provincia`, `canton`, `distrito`. Códigos de Hacienda como `CHAR(1)`, `CHAR(2)` y `CHAR(2)` para conservar los ceros a la izquierda. Se cargan 7 provincias, 81 cantones y 475 distritos del documento oficial (sin barrios).
 - **Clientes:** `cliente` (datos comunes y `distrito_id` + `otras_senas`), `cliente_fisico` y `cliente_juridico` (la lógica de registro clasifica una persona como física o jurídica; las tablas subtipo comparten `cliente_id` como PK y FK al supertipo). Las FK **no garantizan por sí solas** que un cliente tenga exactamente uno de los dos subtipos ni que estos sean excluyentes.
@@ -113,7 +111,10 @@ En las tablas del esquema se emplean `PRIMARY KEY`, `FOREIGN KEY`, `NOT NULL` y 
 
 Todos devuelven `@codigo_error` (0 = OK) y `@mensaje_error`. Los que crean registros devuelven además el identificador: `@cliente_id` (`usp_registrar_cliente`), `@item_facturable_id` (`usp_registrar_producto`), `@factura_id` y `@numero_factura` (`usp_registrar_factura`). `usp_registrar_factura` recibe las líneas como parámetro de tabla (`dbo.tipo_detalle_factura`: ítem, cantidad y descuento; el precio, el impuesto y la descripción se toman del catálogo).
 
-Los errores propios usan códigos de 50001 a 50999 agrupados por familia (por ejemplo, `50213` = existencias insuficientes). La tabla completa está en el estándar de nomenclatura.
+Los procedimientos almacenados utilizan códigos de error personalizados mediante `THROW`, principalmente dentro del intervalo 50001 a 50512. Estos códigos se organizan por familias según el tipo de operación, incluyendo carga de datos, administración de clientes y productos, facturación, cambios de estado, consultas y auditoría.
+
+El estándar de nomenclatura documenta las familias de códigos utilizadas y algunos ejemplos representativos. Las condiciones específicas que producen cada error pueden consultarse directamente en los procedimientos y triggers correspondientes.
+
 
 ## Funciones (5)
 
